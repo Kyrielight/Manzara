@@ -3,7 +3,8 @@ import unittest
 from re import Pattern
 from typing import Tuple
 
-from src.definitions import arguments_command, base_command
+from context import definitions # type: ignore
+from definitions import arguments_command, base_command
 
 class BaseCommandTest(unittest.TestCase):
 

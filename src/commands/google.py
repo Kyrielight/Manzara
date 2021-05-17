@@ -8,7 +8,7 @@ class Google(ManzaraWithArgumentsCommand):
 
     def redirect(self, args: Tuple[str]) -> str:
         if len(args) > 1:
-            return 'https://google.com/search?q={}'.format(quote(' '.join(args)))
+            return 'https://www.google.com/search?q={}'.format(quote(' '.join(args[1:])))
         else:
             return 'https://www.google.com'
 
