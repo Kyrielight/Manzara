@@ -1,12 +1,12 @@
 import re
 
 from definitions.arguments_command import ManzaraWithArgumentsCommand
-from typing import List
+from typing import Tuple
 from urllib.parse import quote
 
 class Google(ManzaraWithArgumentsCommand):
 
-    def redirect(self, args: List[str]) -> str:
+    def redirect(self, args: Tuple[str]) -> str:
         if len(args) > 1:
             return 'https://google.com/search?q={}'.format(quote(' '.join(args)))
         else:
@@ -17,7 +17,7 @@ class Google(ManzaraWithArgumentsCommand):
         return """For making searches on Google"""
 
     @property
-    def bindings(self) -> List[re.Pattern]:
+    def bindings(self) -> Tuple[re.Pattern]:
         return [
             re.compile(r'^(?:g|google)(?:\ .+)?$', re.IGNORECASE),
         ]

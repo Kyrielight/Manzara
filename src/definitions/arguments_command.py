@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from .base_command import ManzaraBaseCommand
 
-from typing import List
+from typing import Tuple
 
 class ManzaraWithArgumentsCommand(ManzaraBaseCommand):
 
     @abstractmethod
-    def redirect(self, args: List[str]) -> str:
+    def redirect(self, args: Tuple[str]) -> str:
         """
         A Manzara command that gets arguments passed in with it.
 

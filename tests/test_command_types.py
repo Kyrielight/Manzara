@@ -1,7 +1,7 @@
 import unittest
 
 from re import Pattern
-from typing import List
+from typing import Tuple
 
 from src.definitions import arguments_command, base_command
 
@@ -22,14 +22,14 @@ class BaseCommandTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             class ManzaraBaseCommandNoDescription(base_command.ManzaraBaseCommand):
-                def bindings(self) -> List[Pattern]:
+                def bindings(self) -> Tuple[Pattern]:
                     return list()
             _ = ManzaraBaseCommandNoDescription()
 
     def test_impl_of_base_command(self):
 
         class ManzaraBaseCommandCorrect(base_command.ManzaraBaseCommand):
-            def bindings(self) -> List[Pattern]:
+            def bindings(self) -> Tuple[Pattern]:
                 return list()
             def description(self) -> str:
                 return str()
@@ -44,7 +44,7 @@ class ArgumentsCommandTest(unittest.TestCase):
     def test_no_redirect_impl(self):
         with self.assertRaises(TypeError):
             class ManzaraWithArgumentsNoRedirect(arguments_command.ManzaraWithArgumentsCommand):
-                def bindings(self) -> List[Pattern]:
+                def bindings(self) -> Tuple[Pattern]:
                     return list()
                 def description(self) -> str:
                     return str()
@@ -52,11 +52,11 @@ class ArgumentsCommandTest(unittest.TestCase):
     
     def test_all_methods_impl(self):
         class ManzaraWithArgumentsCorrect(arguments_command.ManzaraWithArgumentsCommand):
-                def bindings(self) -> List[Pattern]:
+                def bindings(self) -> Tuple[Pattern]:
                     return list()
                 def description(self) -> str:
                     return str()
-                def redirect(self, args: List[str]) -> str:
+                def redirect(self, args: Tuple[str]) -> str:
                     return str()
         self.assertIsInstance(ManzaraWithArgumentsCorrect(), base_command.ManzaraBaseCommand)
 

@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Tuple 
 from re import Pattern
 
 class ManzaraBaseCommand(ABC):
 
     @property
     @abstractmethod
-    def bindings(self) -> List[Pattern]:
+    def bindings(self) -> Tuple[Pattern]:
         """
         Return a list of bindings represented as re.Pattern objects.
         Note: Manzara will call .strip() on the passed in command before checking x.bindings().
