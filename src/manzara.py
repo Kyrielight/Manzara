@@ -60,7 +60,7 @@ def bunny():
                 return redirect(binder[1](command.split()))
 
     except:
-        return redirect('https://google.com')
+        return redirect(Google().redirect([]))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=6973)
