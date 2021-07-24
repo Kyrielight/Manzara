@@ -3,7 +3,7 @@ import inspect
 import os
 import re
 
-from definitions.arguments_command import Usagi12WithArgumentsCommand
+from definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 from typing import Callable, Dict, List, Tuple
 
 from flask import Flask, request, redirect
@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from commands.google import Google # Default fallback
 
-BASE_CLASSES = [Usagi12WithArgumentsCommand]
+BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
 LOOKUP_DICT: Dict[str, Callable] = dict()
@@ -65,11 +65,17 @@ def bunny():
         trigger = command.split()[0]
         
         if trigger in LOOKUP_DICT:
-            return redirect(LOOKUP_DICT[trigger](command.split()))
+            try:
+                return redirect(LOOKUP_DICT[trigger](command.split()))
+            except:
+                return redirect(LOOKUP_DICT[trigger]())
         else:
             for binder in LOOKUP_REGEX_LIST:
                 if binder[0].match(command):
-                    return redirect(binder[1](command.split()))
+                    try:
+                        return redirect(binder[1](command.split()))
+                    except:
+                        return redirect(binder[1]())
 
     except:
         return redirect(Google().redirect([]))

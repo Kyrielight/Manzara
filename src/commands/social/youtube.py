@@ -1,7 +1,7 @@
 import re
 
 from definitions.arguments_command import Usagi12WithArgumentsCommand
-from typing import Tuple
+from typing import Optional, Tuple
 from urllib.parse import quote
 
 YOUTUBE_URL_BASE = "https://youtube.com"
@@ -20,11 +20,11 @@ class Youtube(Usagi12WithArgumentsCommand):
         return """For making searches on YouTube"""
     
     @property
-    def bindings(self) -> Tuple[re.Pattern]:
+    def bindings(self) -> Optional[Tuple[re.Pattern]]:
         return None
     
     @property
-    def triggers(self) -> Tuple[str]:
+    def triggers(self) -> Optional[Tuple[str]]:
         return (
             "yt",
             "youtube",
