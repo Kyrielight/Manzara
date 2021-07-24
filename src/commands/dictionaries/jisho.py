@@ -1,7 +1,7 @@
 import re
 
 from definitions.arguments_command import Usagi12WithArgumentsCommand
-from typing import Tuple
+from typing import Optional, Tuple
 from urllib.parse import quote
 
 JISHO_URL_BASE  = "https://www.jisho.org/"
@@ -39,12 +39,12 @@ class Jisho(Usagi12WithArgumentsCommand):
         return """For making searches on Jisho"""
 
     @property
-    def bindings(self) -> Tuple[re.Pattern]:
+    def bindings(self) -> Optional[Tuple[re.Pattern]]:
         return (
             re.compile(r'^j[wksn]?(?:\ .+)?$', re.IGNORECASE),
             re.compile(r'^jisho(?:\ .+)?$', re.IGNORECASE)
         )
 
     @property
-    def triggers(self) -> Tuple[str]:
-        return tuple()
+    def triggers(self) -> Optional[Tuple[str]]:
+        return None

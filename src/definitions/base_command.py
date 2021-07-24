@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Optional, Tuple
 from re import Pattern
 
 class Usagi12BaseCommand(ABC):
 
     @property
     @abstractmethod
-    def bindings(self) -> Tuple[Pattern]:
+    def bindings(self) -> Optional[Tuple[Pattern]]:
         """
         Return a list of bindings represented as re.Pattern objects.
         Note: Usagi12 will call .strip() on the passed in command before checking x.bindings().
@@ -16,7 +16,7 @@ class Usagi12BaseCommand(ABC):
 
     @property
     @abstractmethod
-    def triggers(self) -> Tuple[str]:
+    def triggers(self) -> Optional[Tuple[str]]:
         """
         Return a list of strings that act as "triggers". Instead of matching regex, this will
         match the words provided and pass to the redirect. Is not case-sensitive.

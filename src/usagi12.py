@@ -42,13 +42,13 @@ for root, dirs, files in os.walk(("commands")):
                     # Only import modules that are in a specific subclass that we want to work with
                     if should_import(c[1]):
                         temp_instance = c[1]() # Create an instance of the class
-                        for binding in temp_instance.triggers:
+                        for binding in temp_instance.triggers or list():
                             if binding not in LOOKUP_DICT:
                                 LOOKUP_DICT[binding] = temp_instance.redirect
                             else:
                                 # TODO: Migrate to Ayumi for logging
                                 print("Warning: Duplicate trigger found: {}".format(binding))
-                        for binding in temp_instance.bindings:
+                        for binding in temp_instance.bindings or list():
                             LOOKUP_REGEX_LIST.append((binding, temp_instance.redirect))
 
 # We should default to Google if nothing else is matched
