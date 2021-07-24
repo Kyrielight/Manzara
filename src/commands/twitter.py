@@ -11,7 +11,7 @@ class Twitter(Usagi12WithArgumentsCommand):
 
     def redirect(self, args: Tuple[str]) -> str:
         if len(args) > 1:
-            
+
             root_arg = args[0].lower()
 
             if root_arg == "t@":
@@ -28,6 +28,13 @@ class Twitter(Usagi12WithArgumentsCommand):
 
     @property
     def bindings(self) -> Tuple[re.Pattern]:
-        return [
+        return (
             re.compile(r'^(?:t@|t|twitter)(?:\ .+)?$', re.IGNORECASE),
-        ]
+        )
+
+    @property
+    def triggers(self) -> Tuple[str]:
+        return (
+            "t",
+            "twitter"
+        )

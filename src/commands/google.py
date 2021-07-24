@@ -18,6 +18,10 @@ class Google(Usagi12WithArgumentsCommand):
 
     @property
     def bindings(self) -> Tuple[re.Pattern]:
-        return [
+        return (
             re.compile(r'^(?:g|google)(?:\ .+)?$', re.IGNORECASE),
-        ]
+        )
+
+    @property
+    def triggers(self) -> Tuple[str]:
+        return tuple()

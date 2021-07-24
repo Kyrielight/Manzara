@@ -24,21 +24,27 @@ class Jisho(Usagi12WithArgumentsCommand):
                 return JISHO_URL_SEARCH + rest_arg + WORDS
             elif root_arg == "jk":
                 return JISHO_URL_SEARCH + rest_arg + KANJI
-            elif root_arg == "js":
-                return JISHO_URL_SEARCH + rest_arg + SENTENCES
             elif root_arg == "jn":
                 return JISHO_URL_SEARCH + rest_arg + NAMES
-                
+            elif root_arg == "js":
+                return JISHO_URL_SEARCH + rest_arg + SENTENCES
+            else:
+                return JISHO_URL_SEARCH + rest_arg
+
         else:
             return JISHO_URL_BASE
 
     @property
     def description(self) -> str:
         return """For making searches on Jisho"""
-    
+
     @property
     def bindings(self) -> Tuple[re.Pattern]:
-        return [
+        return (
             re.compile(r'^j[wksn]?(?:\ .+)?$', re.IGNORECASE),
             re.compile(r'^jisho(?:\ .+)?$', re.IGNORECASE)
-        ]
+        )
+
+    @property
+    def triggers(self) -> Tuple[str]:
+        return tuple()

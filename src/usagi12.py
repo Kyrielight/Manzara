@@ -4,7 +4,7 @@ import os
 import re
 
 from definitions.arguments_command import Usagi12WithArgumentsCommand
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 from flask import Flask, request, redirect
 from urllib.parse import quote
@@ -13,7 +13,8 @@ from commands.google import Google # Default fallback
 
 BASE_CLASSES = [Usagi12WithArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
-LOOKUP_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
+LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
+LOOKUP_DICT: Dict[str, Callable] = dict()
 
 app = Flask(__name__)
 
@@ -41,11 +42,17 @@ for root, dirs, files in os.walk(("commands")):
                     # Only import modules that are in a specific subclass that we want to work with
                     if should_import(c[1]):
                         temp_instance = c[1]() # Create an instance of the class
+                        for binding in temp_instance.triggers:
+                            if binding not in LOOKUP_DICT:
+                                LOOKUP_DICT[binding] = temp_instance.redirect
+                            else:
+                                # TODO: Migrate to Ayumi for logging
+                                print("Warning: Duplicate trigger found: {}".format(binding))
                         for binding in temp_instance.bindings:
-                            LOOKUP_LIST.append((binding, temp_instance.redirect))
+                            LOOKUP_REGEX_LIST.append((binding, temp_instance.redirect))
 
 # We should default to Google if nothing else is matched
-LOOKUP_LIST.append((re.compile(r'.*'), Google().redirect))
+LOOKUP_REGEX_LIST.append((re.compile(r'.*'), Google().redirect))
 
 
 @app.route("/bunny", methods=['GET'])
@@ -55,9 +62,14 @@ def bunny():
             raise Exception()
 
         command = request.args['query'].strip()
-        for binder in LOOKUP_LIST:
-            if binder[0].match(command):
-                return redirect(binder[1](command.split()))
+        trigger = command.split()[0]
+        
+        if trigger in LOOKUP_DICT:
+            return redirect(LOOKUP_DICT[trigger](command.split()))
+        else:
+            for binder in LOOKUP_REGEX_LIST:
+                if binder[0].match(command):
+                    return redirect(binder[1](command.split()))
 
     except:
         return redirect(Google().redirect([]))
