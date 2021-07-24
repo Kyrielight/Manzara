@@ -3,7 +3,7 @@ import inspect
 import os
 import re
 
-from definitions.arguments_command import ManzaraWithArgumentsCommand
+from definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Callable, List, Tuple
 
 from flask import Flask, request, redirect
@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from commands.google import Google # Default fallback
 
-BASE_CLASSES = [ManzaraWithArgumentsCommand]
+BASE_CLASSES = [Usagi12WithArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 LOOKUP_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
 

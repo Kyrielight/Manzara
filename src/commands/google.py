@@ -1,10 +1,10 @@
 import re
 
-from definitions.arguments_command import ManzaraWithArgumentsCommand
+from definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Tuple
 from urllib.parse import quote
 
-class Google(ManzaraWithArgumentsCommand):
+class Google(Usagi12WithArgumentsCommand):
 
     def redirect(self, args: Tuple[str]) -> str:
         if len(args) > 1:

@@ -1,6 +1,6 @@
 import re
 
-from definitions.arguments_command import ManzaraWithArgumentsCommand
+from definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Tuple
 from urllib.parse import quote
 
@@ -11,7 +11,7 @@ KANJI = quote(" #kanji")
 SENTENCES = quote(" #sentences")
 NAMES = quote(" #names")
 
-class Jisho(ManzaraWithArgumentsCommand):
+class Jisho(Usagi12WithArgumentsCommand):
 
     def redirect(self, args: Tuple[str]) -> str:
         if len(args) > 1:
