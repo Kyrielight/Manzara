@@ -11,7 +11,7 @@ class GoogleCommandTest(unittest.TestCase):
         self.instance = google.Google()
 
     def test_ineritance(self):
-        self.assertIsInstance(self.instance, arguments_command.ManzaraWithArgumentsCommand)
+        self.assertIsInstance(self.instance, arguments_command.Usagi12WithArgumentsCommand)
 
     def test_single_letter_input(self):
         self.assertEqual(self.instance.redirect(["g"]), "https://www.google.com")
