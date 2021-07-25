@@ -64,12 +64,12 @@ def bunny():
         command = request.args['query'].strip()
         trigger = command.split()[0]
         
-        if trigger in LOOKUP_DICT:
+        try:
             try:
                 return redirect(LOOKUP_DICT[trigger](command.split()))
             except:
                 return redirect(LOOKUP_DICT[trigger]())
-        else:
+        except:
             for binder in LOOKUP_REGEX_LIST:
                 if binder[0].match(command):
                     try:
@@ -77,8 +77,8 @@ def bunny():
                     except:
                         return redirect(binder[1]())
 
-    except:
-        return redirect(Google().redirect([]))
+    except Exception:
+        return redirect(Google().redirect(command.split()))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=6973)

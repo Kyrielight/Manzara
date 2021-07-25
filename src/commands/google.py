@@ -7,8 +7,16 @@ from urllib.parse import quote
 class Google(Usagi12WithArgumentsCommand):
 
     def redirect(self, args: Tuple[str]) -> str:
-        if len(args) > 1:
-            return 'https://www.google.com/search?q={}'.format(quote(' '.join(args[1:])))
+        """
+        The Google redirect is a bit special because everything gets
+        defaulted here too, so we need to check if the bindings match.
+        """
+        if len(args) > 0:
+            args = ' '.join(args)
+            if self.bindings[0].match(args):
+                return 'https://www.google.com/search?q={}'.format(quote(args[1:]))
+            else:
+                return 'https://www.google.com/search?q={}'.format(quote(args))
         else:
             return 'https://www.google.com'
 
