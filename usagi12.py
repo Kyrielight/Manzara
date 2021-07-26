@@ -6,13 +6,13 @@ import re
 
 from ayumi import Ayumi
 
-from definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
+from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 from typing import Callable, Dict, List, Tuple
 
 from flask import Flask, request, redirect
 from urllib.parse import quote
 
-from commands.google import Google # Default fallback
+from src.commands.google import Google # Default fallback
 
 BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
@@ -38,7 +38,7 @@ Merge requests, etc. should be very carefully verified (if anyone even uses this
 """
 # Create a helper to validate eligibility of import. Maybe move this to util later on.
 should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
-for root, dirs, files in os.walk(("commands")):
+for root, dirs, files in os.walk(("src/commands")):
     for file in files:
         if file.endswith(".py"):
             # Import any file that ends with .py

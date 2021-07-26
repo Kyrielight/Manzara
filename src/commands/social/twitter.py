@@ -1,6 +1,6 @@
 import re
 
-from definitions.arguments_command import Usagi12WithArgumentsCommand
+from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Tuple
 from urllib.parse import quote
 
