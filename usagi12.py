@@ -102,8 +102,8 @@ def bunny():
                         return redirect(url)
 
     except Exception:
-        url = Google().redirect(command.split())
-        if not incognito: Ayumi.info('Redirecting no match query "{}" to "{}"'.format(command, url), color=Ayumi.LBLUE)
+        url = Google().redirect()
+        if not incognito: Ayumi.info('No match found, redirecting to default: {}'.format(url), color=Ayumi.LBLUE)
         return redirect(url)
 
 if __name__ == "__main__":
