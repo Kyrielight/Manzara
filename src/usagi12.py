@@ -1,7 +1,10 @@
 import importlib
 import inspect
+import logging
 import os
 import re
+
+from ayumi import Ayumi
 
 from definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 from typing import Callable, Dict, List, Tuple
@@ -16,7 +19,12 @@ BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
 LOOKUP_DICT: Dict[str, Callable] = dict()
 
+INCOGNITO_BINDING = re.compile(r'^(?:!)|(?:incognito)|(?:incog)|(?:nolog)', re.IGNORECASE)
+
 app = Flask(__name__)
+# Disable Werkzeug logger to respect incognito settings.
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.ERROR)
 
 """
 Some preprocessing steps:
@@ -42,16 +50,19 @@ for root, dirs, files in os.walk(("commands")):
                     # Only import modules that are in a specific subclass that we want to work with
                     if should_import(c[1]):
                         temp_instance = c[1]() # Create an instance of the class
+                        Ayumi.debug("Loading class: {}".format(temp_instance.__class__.__name__))
                         for binding in temp_instance.triggers or list():
                             if binding not in LOOKUP_DICT:
+                                Ayumi.debug("Adding trigger: {}".format(binding))
                                 LOOKUP_DICT[binding] = temp_instance.redirect
                             else:
-                                # TODO: Migrate to Ayumi for logging
-                                print("Warning: Duplicate trigger found: {}".format(binding))
+                                Ayumi.warning("Duplicate trigger found: {}".format(binding), color=Ayumi.RED)
                         for binding in temp_instance.bindings or list():
+                            Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"))
                             LOOKUP_REGEX_LIST.append((binding, temp_instance.redirect))
 
 # We should default to Google if nothing else is matched
+Ayumi.debug("Adding default Google redirection.")
 LOOKUP_REGEX_LIST.append((re.compile(r'.*'), Google().redirect))
 
 
@@ -62,23 +73,39 @@ def bunny():
             raise Exception()
 
         command = request.args['query'].strip()
+
+        # Special binding that can allow incognito search (no-log)
+        incognito = INCOGNITO_BINDING.match(command) != None
+        if incognito: command = INCOGNITO_BINDING.sub("", command)
+
         trigger = command.split()[0]
-        
+
         try:
             try:
-                return redirect(LOOKUP_DICT[trigger](command.split()))
+                url = LOOKUP_DICT[trigger](command.split())
+                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                return redirect(url)
             except:
-                return redirect(LOOKUP_DICT[trigger]())
+                url = LOOKUP_DICT[trigger]()
+                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                return redirect(url)
         except:
             for binder in LOOKUP_REGEX_LIST:
                 if binder[0].match(command):
                     try:
-                        return redirect(binder[1](command.split()))
+                        url = binder[1](command.split())
+                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                        return redirect(url)
                     except:
-                        return redirect(binder[1]())
+                        url = binder[1]()
+                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                        return redirect(url)
 
     except Exception:
-        return redirect(Google().redirect(command.split()))
+        url = Google().redirect(command.split())
+        if not incognito: Ayumi.info('Redirecting no match query "{}" to "{}"'.format(command, url), color=Ayumi.LBLUE)
+        return redirect(url)
 
 if __name__ == "__main__":
+    Ayumi.info("Now starting Usagi12 server via Flask Dev...", color=Ayumi.GREEN)
     app.run(host='0.0.0.0', port=6973)
