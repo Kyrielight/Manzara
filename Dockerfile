@@ -12,4 +12,4 @@ COPY src /usagi12/src
 COPY usagi12.py /usagi12/
 
 WORKDIR /usagi12
-ENTRYPOINT ["gunicorn", "-b", "127.0.0.1:8080", "usagi12:app"]
+ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:8080", "usagi12:app"]
