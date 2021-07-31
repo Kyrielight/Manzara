@@ -1,7 +1,7 @@
 import re
 
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
-from typing import Tuple
+from typing import Optional, Tuple
 from urllib.parse import quote
 
 TWITTER_URL_BASE = "https://twitter.com/"
@@ -27,13 +27,13 @@ class Twitter(Usagi12WithArgumentsCommand):
         return """For making searches on Twitter"""
 
     @property
-    def bindings(self) -> Tuple[re.Pattern]:
+    def bindings(self) -> Optional[Tuple[re.Pattern]]:
         return (
             re.compile(r'^(?:t@|t|twitter)(?:\ .+)?$', re.IGNORECASE),
         )
 
     @property
-    def triggers(self) -> Tuple[str]:
+    def triggers(self) -> Optional[Tuple[str]]:
         return (
             "t",
             "twitter"
