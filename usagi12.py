@@ -19,7 +19,7 @@ BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
 LOOKUP_DICT: Dict[str, Callable] = dict()
 
-INCOGNITO_BINDING = re.compile(r'^(?:!)|(?:incognito)|(?:incog)|(?:nolog)', re.IGNORECASE)
+INCOGNITO_BINDING = re.compile(r'^((?:!)|(?:incognito)|(?:incog)|(?:nolog))(?:\s?)', re.IGNORECASE)
 
 app = Flask(__name__)
 # Disable Werkzeug logger to respect incognito settings.
