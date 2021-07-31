@@ -29,7 +29,7 @@ class Reddit(Usagi12WithArgumentsCommand):
     @property
     def bindings(self) -> Optional[Tuple[re.Pattern]]:
         return (
-            re.compile(r'^(?:r\/\w+)|(?:re?((?:18)|(?:nsfw))? .+)$'),
+            re.compile(r'^(?:r\/\w+)|(?:re?((?:18)|(?:nsfw))? .+)$', re.IGNORECASE),
         )
     
     @property
