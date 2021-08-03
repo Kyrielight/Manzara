@@ -3,12 +3,12 @@ from .base_command import Usagi12BaseCommand
 
 from langcodes import Language
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 class Usagi12WithArgumentsCommand(Usagi12BaseCommand):
 
     @abstractmethod
-    def redirect(self, args: Tuple[str], language: Language) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         """
         A Usagi12 command that gets arguments passed in with it.
 
@@ -25,7 +25,7 @@ class Usagi12WithArgumentsCommand(Usagi12BaseCommand):
 class Usagi12WithoutArgumentsCommand(Usagi12BaseCommand):
 
     @abstractmethod
-    def redirect(self, language: Language) -> str:
+    def redirect(self, language: Optional[Language]) -> str:
         """
         A Usagi12 command that does not have arguments passed.
 

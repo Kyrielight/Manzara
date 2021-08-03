@@ -14,7 +14,7 @@ NAMES = quote(" #names")
 
 class Jisho(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str], language: Language) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         if len(args) > 1:
 
             root_arg = args[0].lower()

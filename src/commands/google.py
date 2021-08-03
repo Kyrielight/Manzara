@@ -15,7 +15,7 @@ SEARCH = "search?q={}"
 
 class Google(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str], language: Language) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         """
         The Google redirect is a bit special because everything gets
         defaulted here too, so we need to check if the bindings match.

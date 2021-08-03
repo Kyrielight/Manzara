@@ -13,7 +13,7 @@ NSFW_FLAG = "&include_over_18=on"
 
 class Reddit(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str], language: Language) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         if len(args) == 1 and args[0].startswith("r/"):
             return REDDIT_URL_SUBREDDIT.format(quote(args[0][2:]))
         else:

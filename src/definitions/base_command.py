@@ -31,7 +31,7 @@ class Usagi12BaseCommand(ABC):
     def languages(self) -> Optional[Tuple[Language]]:
         """
         Indicate which locales are supported by this module.
-        If none, will be assumed to be ['en-US'].
+        Leave empty if the language does not matter (i.e. same link is always returned).
         """
         pass
     
