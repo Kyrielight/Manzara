@@ -10,9 +10,34 @@ from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi
 from typing import Callable, Dict, List, Tuple
 
 from flask import Flask, request, redirect
+from langcodes import Language
+from werkzeug.datastructures import LanguageAccept
 from urllib.parse import quote
 
 from src.commands.google import Google # Default fallback
+
+class LookupItem:
+
+    def __init__(self, pattern: re.Pattern, redirect: Callable, languages: Callable):
+        self.pattern: re.Pattern = pattern
+        self.redirect: Callable = redirect
+        self.languages: List[str] = languages() or ['en']
+    
+    @property
+    def pattern(self) -> re.Pattern:
+        return self.pattern
+    
+    @property
+    def languages(self) -> List[str]:
+        return self.languages
+    
+    def redirect(self, *args: Tuple[str]) -> str:
+        try:
+            return self.redirect(args[0])
+        except:
+            return self.redirect()
+            
+
 
 BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
@@ -20,6 +45,9 @@ LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through 
 LOOKUP_DICT: Dict[str, Callable] = dict()
 
 INCOGNITO_BINDING = re.compile(r'^((?:!)|(?:incognito)|(?:incog)|(?:nolog))(?:\s?)', re.IGNORECASE)
+
+LANGUAGE_DEFAULT = Language.get("en-US") # US-English is the default fallback language. 
+LANGUAGE_OVERRIDE_BINDING = re.compile(r'(?:^(?:(?:in:([\w-]+))|(?:\.([\w-]+))(?!.+-[\w-]+$))(?:\s?))|(?:-([\w-]+)$)', re.IGNORECASE)
 
 app = Flask(__name__)
 # Disable Werkzeug logger to respect incognito settings.
@@ -73,11 +101,24 @@ def bunny():
             raise Exception()
 
         command = request.args['query'].strip()
-
+        
         # Special binding that can allow incognito search (no-log)
         incognito = INCOGNITO_BINDING.match(command) != None
         if incognito: command = INCOGNITO_BINDING.sub("", command)
 
+        # Fetch the language to use for the request
+        language = request.accept_languages
+        print(language.values)
+
+        language_override_groups = list()
+        if not incognito: Ayumi.debug("Detected browser language: {}".format(language.to_header()))
+        # Load any user overrides, if specified
+        if match := LANGUAGE_OVERRIDE_BINDING.search(command): 
+            language_override_groups = match.groups()
+            language = LanguageAccept([(next((lang for lang in language_override_groups if lang is not None)), 1)])
+            if not incognito: Ayumi.debug("User provided language override: {}".format(language.to_header()))
+            command = LANGUAGE_OVERRIDE_BINDING.sub("", command)
+        
         trigger = command.split()[0]
 
         try:

@@ -1,5 +1,6 @@
 import re
 
+from langcodes import Language
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Optional, Tuple
 from urllib.parse import quote
@@ -38,3 +39,7 @@ class Twitter(Usagi12WithArgumentsCommand):
             "t",
             "twitter"
         )
+    
+    @property
+    def languages(self) -> Optional[Tuple[Language]]:
+        return None

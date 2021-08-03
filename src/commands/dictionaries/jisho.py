@@ -1,5 +1,6 @@
 import re
 
+from langcodes import Language
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Optional, Tuple
 from urllib.parse import quote
@@ -47,4 +48,8 @@ class Jisho(Usagi12WithArgumentsCommand):
 
     @property
     def triggers(self) -> Optional[Tuple[str]]:
+        return None
+    
+    @property
+    def languages(self) -> Optional[Tuple[Language]]:
         return None

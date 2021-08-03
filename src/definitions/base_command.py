@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from langcodes import Language
 from typing import Optional, Tuple
 from re import Pattern
 
@@ -27,8 +28,18 @@ class Usagi12BaseCommand(ABC):
 
     @property
     @abstractmethod
+    def languages(self) -> Optional[Tuple[Language]]:
+        """
+        Indicate which locales are supported by this module.
+        If none, will be assumed to be ['en-US'].
+        """
+        pass
+    
+    @property
+    @abstractmethod
     def description(self) -> str:
         """
         Provide a description of this command.
         """
         pass
+
