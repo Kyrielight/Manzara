@@ -1,5 +1,6 @@
 import re
 
+from langcodes import Language
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Optional, Tuple
 from urllib.parse import quote
@@ -13,7 +14,7 @@ NAMES = quote(" #names")
 
 class Jisho(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str]) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         if len(args) > 1:
 
             root_arg = args[0].lower()
@@ -47,4 +48,8 @@ class Jisho(Usagi12WithArgumentsCommand):
 
     @property
     def triggers(self) -> Optional[Tuple[str]]:
+        return None
+    
+    @property
+    def languages(self) -> Optional[Tuple[Language]]:
         return None

@@ -1,5 +1,6 @@
 import re
 
+from langcodes import Language
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Optional, Tuple
 from urllib.parse import quote
@@ -12,7 +13,7 @@ NSFW_FLAG = "&include_over_18=on"
 
 class Reddit(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str]) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         if len(args) == 1 and args[0].startswith("r/"):
             return REDDIT_URL_SUBREDDIT.format(quote(args[0][2:]))
         else:
@@ -34,4 +35,8 @@ class Reddit(Usagi12WithArgumentsCommand):
     
     @property
     def triggers(self) -> Optional[Tuple[str]]:
+        return None
+    
+    @property
+    def languages(self) -> Optional[Tuple[Language]]:
         return None

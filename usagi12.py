@@ -5,21 +5,42 @@ import os
 import re
 
 from ayumi import Ayumi
+from werkzeug.datastructures import LanguageAccept
 
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, Optional, List, Tuple
 
+from collections import deque
 from flask import Flask, request, redirect
-from urllib.parse import quote
+from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
 
+class LookupItem:
+
+    def __init__(self, redirect: Callable, languages: Optional[Tuple[Language]]):
+        self._redirect: Callable = redirect
+        self._languages: Tuple[Language] = languages or tuple()
+
+    def redirect(self, language: Optional[Language], *args: Tuple[str]) -> str:
+        try:
+            return self._redirect(args[0], language)
+        except:
+            return self._redirect(language)
+
+    @property
+    def languages(self) -> Tuple[Language]:
+        return self._languages
+
+
 BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
-LOOKUP_REGEX_LIST: List[Tuple[re.Pattern, Callable]] = list() # Iterate through to find first matching regex.
-LOOKUP_DICT: Dict[str, Callable] = dict()
+
+TRIGGER_LOOKUP: Dict[str, LookupItem] = dict()
+REGEX_LOOKUP: List[LookupItem] = list()
 
 INCOGNITO_BINDING = re.compile(r'^((?:!)|(?:incognito)|(?:incog)|(?:nolog))(?:\s?)', re.IGNORECASE)
+LANGUAGE_OVERRIDE_BINDING = re.compile(r'(?:^(?:(?:in:([\w-]+))|(?:\.([\w-]+))(?!.+-[\w-]+$))(?:\s?))|(?:\ -([\w-]+)$)', re.IGNORECASE)
 
 app = Flask(__name__)
 # Disable Werkzeug logger to respect incognito settings.
@@ -50,21 +71,17 @@ for root, dirs, files in os.walk(("src/commands")):
                     # Only import modules that are in a specific subclass that we want to work with
                     if should_import(c[1]):
                         temp_instance = c[1]() # Create an instance of the class
-                        Ayumi.debug("Loading class: {}".format(temp_instance.__class__.__name__))
                         for binding in temp_instance.triggers or list():
-                            if binding not in LOOKUP_DICT:
+                            if binding not in TRIGGER_LOOKUP:
                                 Ayumi.debug("Adding trigger: {}".format(binding))
-                                LOOKUP_DICT[binding] = temp_instance.redirect
-                            else:
-                                Ayumi.warning("Duplicate trigger found: {}".format(binding), color=Ayumi.RED)
+                                TRIGGER_LOOKUP[binding] = LookupItem(temp_instance.redirect, temp_instance.languages)
                         for binding in temp_instance.bindings or list():
                             Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"))
-                            LOOKUP_REGEX_LIST.append((binding, temp_instance.redirect))
+                            REGEX_LOOKUP.append((binding, LookupItem(temp_instance.redirect, temp_instance.languages)))
 
 # We should default to Google if nothing else is matched
 Ayumi.debug("Adding default Google redirection.")
-LOOKUP_REGEX_LIST.append((re.compile(r'.*'), Google().redirect))
-
+REGEX_LOOKUP.append((re.compile(r'.*'), LookupItem(Google().redirect, Google().languages)))
 
 @app.route("/bunny", methods=['GET'])
 def bunny():
@@ -72,37 +89,73 @@ def bunny():
         if 'query' not in request.args or not request.args['query']:
             raise Exception()
 
-        command = request.args['query'].strip()
+        # Make a copy of the command for modification, and store original for logging
+        command = command_og = request.args['query'].strip()
 
         # Special binding that can allow incognito search (no-log)
         incognito = INCOGNITO_BINDING.match(command) != None
         if incognito: command = INCOGNITO_BINDING.sub("", command)
+        if not incognito: Ayumi.debug("User command: {}".format(command))
 
+        # Fetch the languages the user's browser provided as part of the accept and convert them to Language objects
+        language_accept = deque(Language.get(l) for l in sorted(
+                                request.accept_languages.values(),
+                                key=lambda v: request.accept_languages.quality(v),
+                                reverse=True)
+                            )
+        if not incognito: Ayumi.debug("Detected browser language: {}".format(request.accept_languages.to_header()))
+
+        # If the user specified an override language, add that to the foremost of the accepted to give it highest priority.
+        if match := LANGUAGE_OVERRIDE_BINDING.search(command):
+            language_accept.appendleft(Language.get(next(lang for lang in match.groups() if lang is not None)))
+            if not incognito: Ayumi.debug("User provided language override: {}".format(str(language_accept[0])))
+            command = LANGUAGE_OVERRIDE_BINDING.sub("", command)
+
+        # To preserve the null state, the default language is None (if not provided).
+        # This will be passed to the module if the module does not support any languages forwarded by the user's browser.
+        language: LanguageAccept = None
+
+        # If there is a trigger word, it would be the first word at this stage.
         trigger = command.split()[0]
 
+        # First check if a trigger exists for our command, more efficient
         try:
+            module: LookupItem = TRIGGER_LOOKUP[trigger]
+            if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+            for la in language_accept:
+                if la in module.languages:
+                    if not incognito: Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
+                    language = la
+                    break
             try:
-                url = LOOKUP_DICT[trigger](command.split())
-                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                url = module.redirect(language, command.split())
+                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
                 return redirect(url)
             except:
-                url = LOOKUP_DICT[trigger]()
-                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                url = module.redirect(language)
+                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
                 return redirect(url)
+        # No amtch, so we'll need to scan all the regexes for a potential match.
         except:
-            for binder in LOOKUP_REGEX_LIST:
+            for binder in REGEX_LOOKUP:
                 if binder[0].match(command):
+                    module = binder[1]
+                    if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+                    for la in language_accept:
+                        if la in module.languages:
+                            if not incognito: Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
+                            language = la
+                            break
                     try:
-                        url = binder[1](command.split())
-                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                        url = module.redirect(language, command.split())
+                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
                         return redirect(url)
                     except:
-                        url = binder[1]()
-                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command, url), color=Ayumi.LCYAN)
+                        url = module.redirect(language)
+                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
                         return redirect(url)
-
     except Exception:
-        url = Google().redirect()
+        url = Google().redirect((), Language.get(DEFAULT_LANGUAGE))
         if not incognito: Ayumi.info('No match found, redirecting to default: {}'.format(url), color=Ayumi.LBLUE)
         return redirect(url)
 

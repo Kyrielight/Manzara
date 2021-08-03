@@ -1,5 +1,6 @@
 import re
 
+from langcodes import Language
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand
 from typing import Optional, Tuple
 from urllib.parse import quote
@@ -9,7 +10,7 @@ TWITTER_URL_SEARCH = "https://www.twitter.com/search?q="
 
 class Twitter(Usagi12WithArgumentsCommand):
 
-    def redirect(self, args: Tuple[str]) -> str:
+    def redirect(self, args: Tuple[str], language: Optional[Language]) -> str:
         if len(args) > 1:
 
             root_arg = args[0].lower()
@@ -38,3 +39,7 @@ class Twitter(Usagi12WithArgumentsCommand):
             "t",
             "twitter"
         )
+    
+    @property
+    def languages(self) -> Optional[Tuple[Language]]:
+        return None
