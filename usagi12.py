@@ -1,27 +1,16 @@
-import importlib
-import inspect
 import logging
 import os
 import re
 
 from ayumi import Ayumi
 
-from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
-from typing import Callable, Dict, Optional, List, Tuple
-
 from collections import deque
 from flask import Flask, request, redirect
 from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
-from src.http.lookup_item import LookupItem
 from src.http.lookup_store import LookupStore
 
-BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
-BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
-
-TRIGGER_LOOKUP: Dict[str, LookupItem] = dict()
-REGEX_LOOKUP: List[LookupItem] = list()
 
 INCOGNITO_BINDING = re.compile(r'^((?:!)|(?:incognito)|(?:incog)|(?:nolog))(?:\s?)', re.IGNORECASE)
 LANGUAGE_OVERRIDE_BINDING = re.compile(r'(?:^(?:(?:in:([\w-]+))|(?:\.([\w-]+))(?!.+-[\w-]+$))(?:\s?))|(?:\ -([\w-]+)$)', re.IGNORECASE)
@@ -30,42 +19,6 @@ app = Flask(__name__)
 # Disable Werkzeug logger to respect incognito settings.
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.setLevel(logging.ERROR)
-
-"""
-Some preprocessing steps:
-
-1. Dynamically import every subcommand module.
-2. If we want to use it, then create an instance of the class, and attach its bindings to the lookup dictionary.
-
-Keep in mind this is not really a safe loader, but this strapping occurs before any public input.
-Merge requests, etc. should be very carefully verified (if anyone even uses this lol).
--- I'm just too lazy to want to manually manage this :)
-"""
-# Create a helper to validate eligibility of import. Maybe move this to util later on.
-should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
-for root, dirs, files in os.walk(("src/commands")):
-    for file in files:
-        if file.endswith(".py"):
-            # Import any file that ends with .py
-            mod_path = os.path.join(root, file).replace("/", ".")[:-3]
-            module = importlib.import_module(mod_path)
-            if module:
-                classes = [x for x in inspect.getmembers(module, inspect.isclass)]
-                for c in classes:
-                    # Only import modules that are in a specific subclass that we want to work with
-                    if should_import(c[1]):
-                        temp_instance = c[1]() # Create an instance of the class
-                        for binding in temp_instance.triggers or list():
-                            if binding not in TRIGGER_LOOKUP:
-                                Ayumi.debug("Adding trigger: {}".format(binding))
-                                TRIGGER_LOOKUP[binding] = LookupItem(temp_instance.redirect, temp_instance.languages)
-                        for binding in temp_instance.bindings or list():
-                            Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"))
-                            REGEX_LOOKUP.append((binding, LookupItem(temp_instance.redirect, temp_instance.languages)))
-
-# We should default to Google if nothing else is matched
-Ayumi.debug("Adding default Google redirection.")
-REGEX_LOOKUP.append((re.compile(r'.*'), LookupItem(Google().redirect, Google().languages)))
 
 @app.route("/bunny", methods=['GET'])
 def bunny():
