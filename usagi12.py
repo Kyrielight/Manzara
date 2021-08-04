@@ -5,7 +5,6 @@ import os
 import re
 
 from ayumi import Ayumi
-from werkzeug.datastructures import LanguageAccept
 
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 from typing import Callable, Dict, Optional, List, Tuple
@@ -15,23 +14,7 @@ from flask import Flask, request, redirect
 from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
-
-class LookupItem:
-
-    def __init__(self, redirect: Callable, languages: Optional[Tuple[Language]]):
-        self._redirect: Callable = redirect
-        self._languages: Tuple[Language] = languages or tuple()
-
-    def redirect(self, language: Optional[Language], *args: Tuple[str]) -> str:
-        try:
-            return self._redirect(args[0], language)
-        except:
-            return self._redirect(language)
-
-    @property
-    def languages(self) -> Tuple[Language]:
-        return self._languages
-
+from src.http.lookup_item import LookupItem
 
 BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
@@ -93,7 +76,7 @@ def bunny():
         command = command_og = request.args['query'].strip()
 
         # Special binding that can allow incognito search (no-log)
-        incognito = INCOGNITO_BINDING.match(command) != None
+        incognito = (request.args.get("incognito", "false").lower() == "true") or (INCOGNITO_BINDING.match(command) != None)
         if incognito: command = INCOGNITO_BINDING.sub("", command)
         if not incognito: Ayumi.debug("User command: {}".format(command))
 
@@ -113,7 +96,7 @@ def bunny():
 
         # To preserve the null state, the default language is None (if not provided).
         # This will be passed to the module if the module does not support any languages forwarded by the user's browser.
-        language: LanguageAccept = None
+        language: Language = None
 
         # If there is a trigger word, it would be the first word at this stage.
         trigger = command.split()[0]
