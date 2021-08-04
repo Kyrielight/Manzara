@@ -50,7 +50,7 @@ class LookupStore:
     REGEX_LOOKUP.append((compile(r'.*'), LookupItem(Google().redirect, Google().languages)))
 
     @classmethod
-    def search(cls, command: str, command_og: str, incognito: bool, language_accept: deque[Language]) -> str:
+    def search(cls, command: str, command_og: str, incognito: bool, language_accept: deque) -> str:
         """
         Perform a search over imported modules and return the best match. Defaults to Google.
 
