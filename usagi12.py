@@ -15,6 +15,7 @@ from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
 from src.http.lookup_item import LookupItem
+from src.http.lookup_store import LookupStore
 
 BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
@@ -94,49 +95,9 @@ def bunny():
             if not incognito: Ayumi.debug("User provided language override: {}".format(str(language_accept[0])))
             command = LANGUAGE_OVERRIDE_BINDING.sub("", command)
 
-        # To preserve the null state, the default language is None (if not provided).
-        # This will be passed to the module if the module does not support any languages forwarded by the user's browser.
-        language: Language = None
+        return redirect(LookupStore.search(command, command_og, incognito, language_accept))
 
-        # If there is a trigger word, it would be the first word at this stage.
-        trigger = command.split()[0]
-
-        # First check if a trigger exists for our command, more efficient
-        try:
-            module: LookupItem = TRIGGER_LOOKUP[trigger]
-            if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
-            for la in language_accept:
-                if la in module.languages:
-                    if not incognito: Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
-                    language = la
-                    break
-            try:
-                url = module.redirect(language, command.split())
-                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
-                return redirect(url)
-            except:
-                url = module.redirect(language)
-                if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
-                return redirect(url)
-        # No amtch, so we'll need to scan all the regexes for a potential match.
-        except:
-            for binder in REGEX_LOOKUP:
-                if binder[0].match(command):
-                    module = binder[1]
-                    if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
-                    for la in language_accept:
-                        if la in module.languages:
-                            if not incognito: Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
-                            language = la
-                            break
-                    try:
-                        url = module.redirect(language, command.split())
-                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
-                        return redirect(url)
-                    except:
-                        url = module.redirect(language)
-                        if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
-                        return redirect(url)
+        
     except Exception:
         url = Google().redirect((), Language.get(DEFAULT_LANGUAGE))
         if not incognito: Ayumi.info('No match found, redirecting to default: {}'.format(url), color=Ayumi.LBLUE)
