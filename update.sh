@@ -5,6 +5,5 @@ docker rm -f usagi12
 
 git pull
 ./build.sh
-./start.sh
-
 docker rmi "$OLD_IMAGE_ID"
+./start.sh
