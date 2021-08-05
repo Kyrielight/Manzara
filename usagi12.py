@@ -47,10 +47,13 @@ def bunny():
             if not incognito: Ayumi.debug("User provided language override: {}".format(str(language_accept[0])))
             command = LANGUAGE_OVERRIDE_BINDING.sub("", command)
 
-        return redirect(LookupStore.search(command, command_og, incognito, language_accept))
+        url = LookupStore.search(command, command_og, incognito, tuple(language_accept))
+        if not incognito: Ayumi.info('Redirecting "{}" to "{}'.format(command_og, url), color=Ayumi.LCYAN)
+        return redirect(url)
 
         
-    except Exception:
+    except Exception as e:
+        if not incognito: Ayumi.warning("Caught error: {}".format(e), Ayumi.LRED)
         url = Google().redirect((), Language.get(DEFAULT_LANGUAGE))
         if not incognito: Ayumi.info('No match found, redirecting to default: {}'.format(url), color=Ayumi.LBLUE)
         return redirect(url)

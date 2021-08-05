@@ -1,10 +1,11 @@
 from collections import deque
+from functools import lru_cache
 from importlib import import_module
 from inspect import getmembers, isclass
 from os import walk
 from os.path import join
 from re import compile
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from ayumi import Ayumi
 from langcodes import Language
@@ -50,7 +51,8 @@ class LookupStore:
     REGEX_LOOKUP.append((compile(r'.*'), LookupItem(Google().redirect, Google().languages)))
 
     @classmethod
-    def search(cls, command: str, command_og: str, incognito: bool, language_accept: deque) -> str:
+    @lru_cache(maxsize=32)
+    def search(cls, command: str, command_og: str, incognito: bool, language_accept: Tuple) -> str:
         """
         Perform a search over imported modules and return the best match. Defaults to Google.
 
@@ -58,7 +60,7 @@ class LookupStore:
         - command: Formatted command string after modifications to search.
         - command_og: Original command, used for logging purposes.
         - incognito: Whether or not to store logging data
-        - language_accept: A deque of Language objects to check for the best language.
+        - language_accept: A Tuple of Language objects to check for the best language.
         """
 
         module: LookupItem = LookupItem(Google().redirect, Google().languages)
@@ -87,9 +89,9 @@ class LookupStore:
         # Return with command or without.
         try:
             url = module.redirect(language, command.split())
-            if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+            if not incognito: Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
             return url
         except:
             url = module.redirect(language)
-            if not incognito: Ayumi.info('Redirecting "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+            if not incognito: Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
             return url            
