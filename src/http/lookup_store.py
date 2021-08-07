@@ -78,6 +78,7 @@ class LookupStore:
                 if binder[0].match(command):
                     module = binder[1]
                     if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+                    break
         
         # Determine the language to be used, in accordance with support from the module.
         for la in language_accept:

@@ -60,4 +60,4 @@ def bunny():
 
 if __name__ == "__main__":
     Ayumi.info("Now starting Usagi12 server via Flask Dev...", color=Ayumi.GREEN)
-    app.run(host='0.0.0.0', port=6973)
+    app.run(host='0.0.0.0', port=6973, debug=True)
