@@ -8,10 +8,10 @@ from flask import Flask, request, redirect
 from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
+from src.http import incognito as incognito_helper
 from src.http.lookup_store import LookupStore
 
 
-INCOGNITO_BINDING = re.compile(r'^((?:!)|(?:incognito)|(?:incog)|(?:nolog))(?:\s?)', re.IGNORECASE)
 LANGUAGE_OVERRIDE_BINDING = re.compile(r'(?:^(?:(?:in:([\w-]+))|(?:\.([\w-]+))(?!.+-[\w-]+$))(?:\s?))|(?:\ -([\w-]+)$)', re.IGNORECASE)
 
 app = Flask(__name__)
@@ -29,8 +29,8 @@ def bunny():
         command = command_og = request.args['query'].strip()
 
         # Special binding that can allow incognito search (no-log)
-        incognito = (request.args.get("incognito", "false").lower() == "true") or (INCOGNITO_BINDING.match(command) != None)
-        if incognito: command = INCOGNITO_BINDING.sub("", command)
+        incognito = incognito_helper.is_enabled(command, request)
+        if incognito: command = incognito_helper.get_new_command(command)
         if not incognito: Ayumi.debug("User command: {}".format(command))
 
         # Fetch the languages the user's browser provided as part of the accept and convert them to Language objects
