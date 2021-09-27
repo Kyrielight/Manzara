@@ -11,4 +11,7 @@ def is_enabled(query: str, req: request):
 
 def get_new_command(command: str):
     """Returns new command, stripped of incognito flags."""
-    return command[1:] # Remove ! at the beginning.
+    if command.startswith("!"):
+        return command[1:]
+    else:
+        return command #Remove ! at the beginning.
