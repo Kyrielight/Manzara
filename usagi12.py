@@ -9,7 +9,8 @@ from langcodes import DEFAULT_LANGUAGE, Language
 
 from src.commands.google import Google # Default fallback
 from src.http import incognito as incognito_helper, language as language_helper
-from src.http.lookup_store import LookupStore
+#from src.http.lookup_store import LookupStore
+from src.http import loader
 
 
 app = Flask(__name__)
@@ -33,7 +34,7 @@ def bunny():
 
         language_accept, command = language_helper.get_languages(request, command, incognito)
 
-        url = LookupStore.search(command, command_og, incognito, tuple(language_accept))
+        url = loader.search(command, command_og, incognito, tuple(language_accept))
         if not incognito: Ayumi.info('Redirecting "{}" to "{}'.format(command_og, url), color=Ayumi.LCYAN)
         return redirect(url)
         
