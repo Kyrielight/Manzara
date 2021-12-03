@@ -1,5 +1,9 @@
 
 
+import toml
+
+from cerberus import Validator
+from collections import defaultdict
 from importlib import import_module
 from inspect import getmembers, isclass
 from os import walk
@@ -22,12 +26,20 @@ BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 TRIGGER_LOOKUP: Dict[str, LookupItem] = dict()
 REGEX_LOOKUP: List[LookupError] = list()
 
+MODULE_VALIDATOR = Validator({
+    'args': {'type': 'boolean', 'required': True},
+    'command': {'type': 'string', 'required': True},
+    'default': {'type': 'string', 'required': True},
+    'urls': {'type': 'dict', 'required': False}
+})
+
 # Lambda to determine if a dynamic class should be imported
 should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
 
 def _maybe_import_from_class_file(root: str, file: str):
     """
-    Helper to load a .py file into the lookup store. Do not use except in initialisation.
+    Helper to load a .py file into the lookup store.
+    Do not use except in initialisation.
     """
     mod_path = join(root, file).replace("/", ".")[:-3]
     module = import_module(mod_path)
@@ -45,6 +57,65 @@ def _maybe_import_from_class_file(root: str, file: str):
                     Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"))
                     REGEX_LOOKUP.append((binding, LookupItem(temp_instance.redirect, temp_instance.languages)))
 
+def _maybe_import_from_toml_file(root: str, file: str):
+    """
+    Helper to load a toml file into the lookup store.
+    Do not use except in initialisation.
+    """
+    try:
+        with open(join(root, file), 'r') as raw:
+            modules = toml.load(raw)
+            # A single file can hold multiple definitions
+            for name, module in modules.items():
+
+                # Validate that each module at least fits the standard.
+                if not MODULE_VALIDATOR.validate(module):
+                    Ayumi.warning("Module {} is invalid, skipping import.".format(name), color=Ayumi.RED)
+                    continue
+
+                # Only load commands that haven't been loaded before.
+                if module['command'] in TRIGGER_LOOKUP:
+                    Ayumi.warning("Module {} is reusing a command, skipping import.".format(name), color=Ayumi.RED)
+                    continue
+
+                # Load argument based modules
+                if module['args']:
+
+                    for language, url in module['urls'].items():
+                        # Ensure that argument-supported URLs have the argument string.
+                        if not url.contains("{arg}"):
+                            Ayumi.warning("Module {} is set to accept arguments, but langcode {} doesn't accept arguments.".format(name, language))
+                            continue
+
+                        # Load here
+
+                # Load no-arg modules
+                else:
+
+                    # Create a structure to store all urls with Language objects as keys
+                    lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
+
+                    # Load any locale-specific urls
+                    if 'urls' in module:
+                        for language, url in module['urls'].items():
+                            try:
+                                lookup_dict[Language.get(language)] = url
+                            except:
+                                Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
+                    # No locale-specific urls, only a default exists
+                    else:
+                        Ayumi.debug("No urls structure in module {}".format(name))
+
+                    # Add binding to the greater lookup
+                    binding = module['command']
+                    if binding not in TRIGGER_LOOKUP:
+                        Ayumi.debug("Adding trigger: {}".format(binding))
+                        TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
+
+
+    except Exception:
+        Ayumi.warning("Failed to load toml file under path {}".format(join(root, file)), color=Ayumi.LRED)
+
 def search(command: str, command_og: str, incognito: bool, language_accept: Tuple) -> str:
     """
     Perform a search over imported modules and return the best match. Defaults to Google.
@@ -55,8 +126,6 @@ def search(command: str, command_og: str, incognito: bool, language_accept: Tupl
     - incognito: Whether or not to store logging data
     - language_accept: A Tuple of Language objects to check for the best language.
     """
-
-    print(language_accept)
 
     module: LookupItem = LookupItem(Google().redirect, Google().languages)
     language: Language = None
@@ -74,7 +143,7 @@ def search(command: str, command_og: str, incognito: bool, language_accept: Tupl
                 module = binder[1]
                 if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
                 break
-    
+
     # Determine the language to be used, in accordance with support from the module.
     for la in language_accept:
         if la in module.languages:
@@ -90,7 +159,7 @@ def search(command: str, command_og: str, incognito: bool, language_accept: Tupl
     except:
         url = module.redirect(language)
         if not incognito: Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
-        return url            
+        return url
 
 # Walk down the file and import modules.
 for root, dirs, files in walk(("src/commands")):
@@ -98,7 +167,7 @@ for root, dirs, files in walk(("src/commands")):
         if file.endswith(".py"):
             _maybe_import_from_class_file(root, file)
         elif file.endswith(".toml"):
-            pass
+            _maybe_import_from_toml_file(root, file)
         elif file.endswith(".yaml") or file.endswith(".yml"):
             pass
 
