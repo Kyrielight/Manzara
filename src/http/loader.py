@@ -10,6 +10,7 @@ from os import walk
 from os.path import join
 from re import compile
 from typing import Dict, List, Tuple
+from urllib.parse import quote
 
 from ayumi import Ayumi
 from langcodes import Language
@@ -78,42 +79,39 @@ def _maybe_import_from_toml_file(root: str, file: str):
                     Ayumi.warning("Module {} is reusing a command, skipping import.".format(name), color=Ayumi.RED)
                     continue
 
-                # Load argument based modules
-                if module['args']:
+                has_args = module['args']
+                binding = module['command']
+                # Create a structure to store all urls with Language objects as keys
+                lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
 
+                # Load any locale-specific urls
+                if 'urls' in module:
                     for language, url in module['urls'].items():
-                        # Ensure that argument-supported URLs have the argument string.
-                        if not url.contains("{arg}"):
+
+                        # If this is an args module, make sure there's a str to replace.
+                        if has_args and not "{arg}" in url:
                             Ayumi.warning("Module {} is set to accept arguments, but langcode {} doesn't accept arguments.".format(name, language))
                             continue
 
-                        # Load here
-
-                # Load no-arg modules
+                        try:
+                            lookup_dict[Language.get(language)] = url
+                        except:
+                            Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
+                # No locale-specific urls, only a default exists
                 else:
+                    Ayumi.debug("No urls structure in module {}".format(name))
 
-                    # Create a structure to store all urls with Language objects as keys
-                    lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
-
-                    # Load any locale-specific urls
-                    if 'urls' in module:
-                        for language, url in module['urls'].items():
-                            try:
-                                lookup_dict[Language.get(language)] = url
-                            except:
-                                Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
-                    # No locale-specific urls, only a default exists
+                # Add binding to the greater lookup
+                if binding not in TRIGGER_LOOKUP:
+                    Ayumi.debug("Adding trigger: {}".format(binding))
+                    if has_args:
+                        TRIGGER_LOOKUP[binding] = LookupItem(lambda a, l: lookup_dict[l].format(arg=quote(' '.join(a[1:]))) if len(a) > 1 \
+                                                                            else lookup_dict.default_factory(), 
+                                                                list(lookup_dict.keys()))
                     else:
-                        Ayumi.debug("No urls structure in module {}".format(name))
-
-                    # Add binding to the greater lookup
-                    binding = module['command']
-                    if binding not in TRIGGER_LOOKUP:
-                        Ayumi.debug("Adding trigger: {}".format(binding))
                         TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
 
-
-    except Exception:
+    except Exception as e:
         Ayumi.warning("Failed to load toml file under path {}".format(join(root, file)), color=Ayumi.LRED)
 
 def search(command: str, command_og: str, incognito: bool, language_accept: Tuple) -> str:
