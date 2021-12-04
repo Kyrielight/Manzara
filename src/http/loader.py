@@ -1,6 +1,7 @@
 
 
 import toml
+import yaml
 
 from cerberus import Validator
 from collections import defaultdict
@@ -72,6 +73,17 @@ def _maybe_import_from_toml_file(root: str, file: str):
     except Exception as e:
         Ayumi.warning("Failed to load toml file under path {}".format(join(root, file)), color=Ayumi.LRED)
 
+def _maybe_import_from_yaml_file(root: str, file: str):
+    """
+    Helper to load a yaml file into the lookup store.
+    Do not use except in initialisation.
+    """
+    try:
+        with open(join(root, file), 'r') as raw:
+            modules = yaml.safe_load(raw)
+            _maybe_import_from_file_modules(modules)
+    except Exception as e:
+        Ayumi.warning("Failed to load yaml file under path {}".format(join(root, file)), color=Ayumi.LRED)
 
 def _maybe_import_from_file_modules(modules: Dict):
 
@@ -174,7 +186,7 @@ for root, dirs, files in walk(("src/commands")):
         elif file.endswith(".toml"):
             _maybe_import_from_toml_file(root, file)
         elif file.endswith(".yaml") or file.endswith(".yml"):
-            pass
+            _maybe_import_from_yaml_file(root, file)
 
 # We should default to Google if nothing else is matched
 Ayumi.debug("Adding default Google redirection.")
