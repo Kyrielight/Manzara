@@ -20,7 +20,7 @@ def get_languages(req: request, command: str, incognito: bool) -> Tuple[Tuple[La
 
     # If user has set a language override, set that as the primary language.
     try:
-        override_lang = request.args['language']
+        override_lang = req.args['language']
         languages.append(Language.get(override_lang))
         if not incognito:
             Ayumi.debug("Detected user language override in params: {}".format(override_lang))
@@ -29,11 +29,11 @@ def get_languages(req: request, command: str, incognito: bool) -> Tuple[Tuple[La
 
     # Fetch the languages the user's browser provided as part of the accept and convert them to Language objects
     languages.extend(Language.get(l) for l in sorted(
-                            request.accept_languages.values(),
-                            key=lambda v: request.accept_languages.quality(v),
+                            req.accept_languages.values(),
+                            key=lambda v: req.accept_languages.quality(v),
                             reverse=True))
     if not incognito: 
-        Ayumi.debug("Detected browser language: {}".format(request.accept_languages.to_header()))
+        Ayumi.debug("Detected browser language: {}".format(req.accept_languages.to_header()))
 
     # If user has provided an override themselves, that takes precedent
     command_split = command.split()
