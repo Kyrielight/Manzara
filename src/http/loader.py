@@ -34,14 +34,16 @@ MODULE_VALIDATOR = Validator({
     'urls': {'type': 'dict', 'required': False}
 })
 
-# Lambda to determine if a dynamic class should be imported
-should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
 
 def _maybe_import_from_class_file(root: str, file: str):
     """
     Helper to load a .py file into the lookup store.
     Do not use except in initialisation.
     """
+
+    # Lambda to determine if a dynamic class should be imported
+    should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
+
     mod_path = join(root, file).replace("/", ".")[:-3]
     module = import_module(mod_path)
     if module:
@@ -66,53 +68,58 @@ def _maybe_import_from_toml_file(root: str, file: str):
     try:
         with open(join(root, file), 'r') as raw:
             modules = toml.load(raw)
-            # A single file can hold multiple definitions
-            for name, module in modules.items():
-
-                # Validate that each module at least fits the standard.
-                if not MODULE_VALIDATOR.validate(module):
-                    Ayumi.warning("Module {} is invalid, skipping import.".format(name), color=Ayumi.RED)
-                    continue
-
-                # Only load commands that haven't been loaded before.
-                if module['command'] in TRIGGER_LOOKUP:
-                    Ayumi.warning("Module {} is reusing a command, skipping import.".format(name), color=Ayumi.RED)
-                    continue
-
-                has_args = module['args']
-                binding = module['command']
-                # Create a structure to store all urls with Language objects as keys
-                lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
-
-                # Load any locale-specific urls
-                if 'urls' in module:
-                    for language, url in module['urls'].items():
-
-                        # If this is an args module, make sure there's a str to replace.
-                        if has_args and not "{arg}" in url:
-                            Ayumi.warning("Module {} is set to accept arguments, but langcode {} doesn't accept arguments.".format(name, language))
-                            continue
-
-                        try:
-                            lookup_dict[Language.get(language)] = url
-                        except:
-                            Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
-                # No locale-specific urls, only a default exists
-                else:
-                    Ayumi.debug("No urls structure in module {}".format(name))
-
-                # Add binding to the greater lookup
-                if binding not in TRIGGER_LOOKUP:
-                    Ayumi.debug("Adding trigger: {}".format(binding))
-                    if has_args:
-                        TRIGGER_LOOKUP[binding] = LookupItem(lambda a, l: lookup_dict[l].format(arg=quote(' '.join(a[1:]))) if len(a) > 1 \
-                                                                            else lookup_dict.default_factory(), 
-                                                                list(lookup_dict.keys()))
-                    else:
-                        TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
-
+            _maybe_import_from_file_modules(modules)
     except Exception as e:
         Ayumi.warning("Failed to load toml file under path {}".format(join(root, file)), color=Ayumi.LRED)
+
+
+def _maybe_import_from_file_modules(modules: Dict):
+
+    # A single module/file can hold multiple definitions
+    for name, module in modules.items():
+
+        # Validate that each module at least fits the standard.
+        if not MODULE_VALIDATOR.validate(module):
+            Ayumi.warning("Module {} is invalid, skipping import.".format(name), color=Ayumi.RED)
+            continue
+
+        # Only load commands that haven't been loaded before.
+        if module['command'] in TRIGGER_LOOKUP:
+            Ayumi.warning("Module {} is reusing a command, skipping import.".format(name), color=Ayumi.RED)
+            continue
+
+        has_args = module['args']
+        binding = module['command']
+        # Create a structure to store all urls with Language objects as keys
+        lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
+
+        # Load any locale-specific urls
+        if 'urls' in module:
+            for language, url in module['urls'].items():
+
+                # If this is an args module, make sure there's a str to replace.
+                if has_args and not "{arg}" in url:
+                    Ayumi.warning("Module {} is set to accept arguments, but langcode {} doesn't accept arguments.".format(name, language))
+                    continue
+
+                try:
+                    lookup_dict[Language.get(language)] = url
+                except:
+                    Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
+        # No locale-specific urls, only a default exists
+        else:
+            Ayumi.debug("No urls structure in module {}".format(name))
+
+        # Add binding to the greater lookup
+        if binding not in TRIGGER_LOOKUP:
+            Ayumi.debug("Adding trigger: {}".format(binding))
+            if has_args:
+                TRIGGER_LOOKUP[binding] = LookupItem(lambda a, l: lookup_dict[l].format(arg=quote(' '.join(a[1:]))) if len(a) > 1 \
+                                                                    else lookup_dict.default_factory(), 
+                                                        list(lookup_dict.keys()))
+            else:
+                TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
+
 
 def search(command: str, command_og: str, incognito: bool, language_accept: Tuple) -> str:
     """
