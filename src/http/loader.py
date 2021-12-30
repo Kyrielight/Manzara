@@ -42,6 +42,10 @@ def _maybe_import_from_class_file(root: str, file: str):
     Do not use except in initialisation.
     """
 
+    if (file == "__init__.py"):
+        Ayumi.debug("Found __init__.py file, skipping.")
+        return
+
     # Lambda to determine if a dynamic class should be imported
     should_import = lambda c : any([issubclass(c, x) for x in BASE_CLASSES]) and not any(c.__name__ == x for x in BASE_CLASS_NAMES)
 
@@ -133,7 +137,7 @@ def _maybe_import_from_file_modules(modules: Dict):
                 TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
 
 
-def search(command: str, command_og: str, incognito: bool, language_accept: Tuple) -> str:
+def search(command: str, command_og: str, language_accept: Tuple) -> str:
     """
     Perform a search over imported modules and return the best match. Defaults to Google.
 
@@ -153,40 +157,44 @@ def search(command: str, command_og: str, incognito: bool, language_accept: Tupl
     # Fetch any module that this command matches. If not, Google is used by default.
     try:
         module = TRIGGER_LOOKUP[trigger]
-        if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+        Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
     except:
         for binder in REGEX_LOOKUP:
             if binder[0].match(command):
                 module = binder[1]
-                if not incognito: Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+                Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
                 break
 
     # Determine the language to be used, in accordance with support from the module.
     for la in language_accept:
         if la in module.languages:
-            if not incognito: Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
+            Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
             language = la
             break
 
     # Return with command or without.
     try:
         url = module.redirect(language, command.split())
-        if not incognito: Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
         return url
     except:
         url = module.redirect(language)
-        if not incognito: Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
         return url
 
 # Walk down the file and import modules.
 for root, dirs, files in walk(("src/commands")):
     for file in files:
+        Ayumi.debug("Now loading: {}".format(file), color=Ayumi.LBLUE)
         if file.endswith(".py"):
             _maybe_import_from_class_file(root, file)
         elif file.endswith(".toml"):
             _maybe_import_from_toml_file(root, file)
         elif file.endswith(".yaml") or file.endswith(".yml"):
             _maybe_import_from_yaml_file(root, file)
+        else:
+            Ayumi.debug("Unrecognised/unimplemented file type: {}, skipping...".format(file), color=Ayumi.LYELLOW)
+        Ayumi.debug("Completed loading: {}".format(file), color=Ayumi.BLUE)
 
 # We should default to Google if nothing else is matched
 Ayumi.debug("Adding default Google redirection.")
