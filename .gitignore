@@ -194,3 +194,6 @@ Thumbs.db
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode
+
+# Ignore any changes in the src/commands folder - this is where user changes will occur
+src/commands/*
