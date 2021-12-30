@@ -1,0 +1,6 @@
+[yt2]
+command = 'yt2'
+args = true
+default = "https://youtube.com"
+[yt2.urls]
+en = "https://www.youtube.com/results?search_query={arg}"
