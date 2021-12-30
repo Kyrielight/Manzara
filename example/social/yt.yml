@@ -1,0 +1,6 @@
+yt3:
+  command: 'yt3'
+  args: true
+  default: "https://youtube.com"
+  urls:
+    en: "https://www.youtube.com/results?search_query={arg}"
