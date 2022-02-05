@@ -26,12 +26,14 @@ BASE_CLASSES = [Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand]
 BASE_CLASS_NAMES = [x.__name__ for x in BASE_CLASSES]
 
 TRIGGER_LOOKUP: Dict[str, LookupItem] = dict()
+SLASH_LOOKUP: Dict[str, LookupItem] = dict()
 REGEX_LOOKUP: List[LookupError] = list()
 
 MODULE_VALIDATOR = Validator({
     'args': {'type': 'boolean', 'required': True},
     'command': {'type': 'string', 'required': True},
     'default': {'type': 'string', 'required': True},
+    'type': {'type': 'string', 'required': True, 'allowed': ['trigger', 'slash', 'all']},
     'urls': {'type': 'dict', 'required': False}
 })
 
@@ -107,7 +109,7 @@ def _maybe_import_from_file_modules(modules: Dict):
         has_args = module['args']
         binding = module['command']
         # Create a structure to store all urls with Language objects as keys
-        lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
+        language_lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
 
         # Load any locale-specific urls
         if 'urls' in module:
@@ -119,22 +121,27 @@ def _maybe_import_from_file_modules(modules: Dict):
                     continue
 
                 try:
-                    lookup_dict[Language.get(language)] = url
+                    language_lookup_dict[Language.get(language)] = url
                 except:
                     Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
         # No locale-specific urls, only a default exists
         else:
             Ayumi.debug("No urls structure in module {}".format(name))
 
-        # Add binding to the greater lookup
-        if binding not in TRIGGER_LOOKUP:
-            Ayumi.debug("Adding trigger: {}".format(binding))
-            if has_args:
-                TRIGGER_LOOKUP[binding] = LookupItem(lambda a, l: lookup_dict[l].format(arg=quote(' '.join(a[1:]))) if len(a) > 1 \
-                                                                    else lookup_dict.default_factory(), 
-                                                        list(lookup_dict.keys()))
-            else:
-                TRIGGER_LOOKUP[binding] = LookupItem(lambda l: lookup_dict[l], list(lookup_dict.keys()))
+        # Create new lookup item
+        lookup_item = LookupItem(lambda a, l: language_lookup_dict[l].format(arg=quote(' '.join(a[1:]))) \
+                            if len(a) > 1 \
+                            else language_lookup_dict.default_factory(), 
+                            list(language_lookup_dict.keys())) \
+                        if has_args \
+                            else LookupItem(lambda l: language_lookup_dict[l], list(language_lookup_dict.keys()))
+
+        if module['type'] == 'trigger' or module['type'] == 'all':
+            Ayumi.debug("Adding trigger: {}".format(binding), color=Ayumi.LCYAN)
+            TRIGGER_LOOKUP[binding] = lookup_item
+        if module['type'] == 'slash' or module['type'] == 'all':
+            Ayumi.debug("Adding slash: {}".format(binding))
+            SLASH_LOOKUP[binding] = lookup_item
 
 
 def search(command: str, command_og: str, language_accept: Tuple) -> str:
@@ -183,19 +190,27 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
         return url
 
 # Walk down the file and import modules.
+Ayumi.debug("Starting module import process...", color=Ayumi.BLUE)
 for root, dirs, files in walk(("src/commands")):
     for file in files:
-        Ayumi.debug("Now loading: {}".format(file), color=Ayumi.LBLUE)
+        Ayumi.debug("Now loading: {}".format(file))
         if file.endswith(".py"):
             _maybe_import_from_class_file(root, file)
         elif file.endswith(".toml"):
             _maybe_import_from_toml_file(root, file)
         elif file.endswith(".yaml") or file.endswith(".yml"):
             _maybe_import_from_yaml_file(root, file)
+        elif file.endswith(".pyc"):
+            Ayumi.debug("Found bytecode file: {}, skipping...".format(file))
         else:
             Ayumi.debug("Unrecognised/unimplemented file type: {}, skipping...".format(file), color=Ayumi.LYELLOW)
-        Ayumi.debug("Completed loading: {}".format(file), color=Ayumi.BLUE)
+        Ayumi.debug("Completed loading: {}".format(file))
 
 # We should default to Google if nothing else is matched
-Ayumi.debug("Adding default Google redirection.")
+Ayumi.debug("Adding default Google redirection.", color=Ayumi.LCYAN)
 REGEX_LOOKUP.append((compile(r'.*'), LookupItem(Google().redirect, Google().languages)))
+
+Ayumi.debug("Loading complete.", color=Ayumi.BLUE)
+Ayumi.debug("Stats: Loaded triggers: {}".format(len(TRIGGER_LOOKUP)), color=Ayumi.MAGENTA)
+Ayumi.debug("Stats: Loaded slashes: {}".format(len(SLASH_LOOKUP)), color=Ayumi.MAGENTA)
+Ayumi.debug("Stats: Loaded regexes: {}".format(len(REGEX_LOOKUP)), color=Ayumi.MAGENTA)
