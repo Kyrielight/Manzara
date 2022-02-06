@@ -15,6 +15,7 @@ class Usagi12WithArgumentsCommand(Usagi12BaseCommand):
         Params:
         - args: A list of strings representing the input that gets called with .strip(), then .split()
                 Argument 0 includes the actual argument passed in.
+                Slash commands will "translated" to trigger commands, e.g. g/query -> ("g", "query")
         - language: Locale to use, as defined by the best available language from the user and the
                 languages specified in Usagi12BaseCommand. Defaults to None.
 

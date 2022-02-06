@@ -1,5 +1,6 @@
 
 
+from lib2to3.pgen2.token import SLASH
 import toml
 import yaml
 
@@ -61,10 +62,15 @@ def _maybe_import_from_class_file(root: str, file: str):
                 temp_instance = c[1]() # Create an instance of the class
                 for binding in temp_instance.triggers or list():
                     if binding not in TRIGGER_LOOKUP:
-                        Ayumi.debug("Adding trigger: {}".format(binding))
+                        Ayumi.debug("Adding trigger: {}".format(binding), color=Ayumi.LCYAN)
                         TRIGGER_LOOKUP[binding] = LookupItem(temp_instance.redirect, temp_instance.languages)
+                for binding in temp_instance.slashes or list():
+                    if binding.endswith("/"): binding = binding[:-1]
+                    if binding not in SLASH_LOOKUP:
+                        Ayumi.debug("Adding slash: {}".format(binding), color=Ayumi.LCYAN)
+                        SLASH_LOOKUP[binding] = LookupItem(temp_instance.redirect, temp_instance.languages)
                 for binding in temp_instance.bindings or list():
-                    Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"))
+                    Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"), color=Ayumi.LCYAN)
                     REGEX_LOOKUP.append((binding, LookupItem(temp_instance.redirect, temp_instance.languages)))
 
 def _maybe_import_from_toml_file(root: str, file: str):
@@ -136,12 +142,20 @@ def _maybe_import_from_file_modules(modules: Dict):
                         if has_args \
                             else LookupItem(lambda l: language_lookup_dict[l], list(language_lookup_dict.keys()))
 
+        # Add bindings to lookups
         if module['type'] == 'trigger' or module['type'] == 'all':
             Ayumi.debug("Adding trigger: {}".format(binding), color=Ayumi.LCYAN)
-            TRIGGER_LOOKUP[binding] = lookup_item
+            if binding not in TRIGGER_LOOKUP:
+                TRIGGER_LOOKUP[binding] = lookup_item
+            else:
+                Ayumi.warning("Found duplicate trigger: {}".format(binding), color=Ayumi.LYELLOW)
+
         if module['type'] == 'slash' or module['type'] == 'all':
-            Ayumi.debug("Adding slash: {}".format(binding))
-            SLASH_LOOKUP[binding] = lookup_item
+            Ayumi.debug("Adding slash: {}".format(binding), color=Ayumi.LCYAN)
+            if binding not in SLASH_LOOKUP:
+                SLASH_LOOKUP[binding] = lookup_item
+            else:
+                Ayumi.warning("Found duplicate slash: {}".format(binding), color=Ayumi.LYELLOW)
 
 
 def search(command: str, command_og: str, language_accept: Tuple) -> str:
@@ -160,33 +174,41 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
 
     # If there is a trigger word, it would be the first word in the command
     trigger = command.split()[0]
+    # If the command is a slah command, the trigger would have '/' in it.
+    slash = trigger.split('/')[0] if '/' in trigger else None
 
     # Fetch any module that this command matches. If not, Google is used by default.
     try:
         module = TRIGGER_LOOKUP[trigger]
-        Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
+        Ayumi.debug("Found in trigger lookup: {}".format(trigger))
     except:
-        for binder in REGEX_LOOKUP:
-            if binder[0].match(command):
-                module = binder[1]
-                Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
-                break
+        try:
+            module = SLASH_LOOKUP[slash]
+            Ayumi.debug("Found in slash lookup: {}".format(slash))
+        except:
+            for binder in REGEX_LOOKUP:
+                if binder[0].match(command):
+                    module = binder[1]
+                    Ayumi.debug("Matched in regex lookup: {}".format(command))
+                    break
 
     # Determine the language to be used, in accordance with support from the module.
+    Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
     for la in language_accept:
         if la in module.languages:
-            Ayumi.debug("Overwrote default language from en to {}".format(str(la)))
+            Ayumi.debug("Overwrote request use language from en to {}".format(str(la)))
             language = la
             break
 
     # Return with command or without.
     try:
-        url = module.redirect(language, command.split())
-        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+        # For ease of development, just convert the slash command into a trigger command.
+        url = module.redirect(language, command.replace("/", " ").split())
+        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url))
         return url
     except:
         url = module.redirect(language)
-        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url), color=Ayumi.LCYAN)
+        Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url))
         return url
 
 # Walk down the file and import modules.

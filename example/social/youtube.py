@@ -25,6 +25,10 @@ class Youtube(Usagi12WithArgumentsCommand):
         return None
     
     @property
+    def slashes(self) -> Optional[Tuple[str]]:
+        return None
+
+    @property
     def triggers(self) -> Optional[Tuple[str]]:
         return (
             "yt",

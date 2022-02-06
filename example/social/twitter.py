@@ -34,6 +34,10 @@ class Twitter(Usagi12WithArgumentsCommand):
         )
 
     @property
+    def slashes(self) -> Optional[Tuple[str]]:
+        return None
+
+    @property
     def triggers(self) -> Optional[Tuple[str]]:
         return (
             "t",
