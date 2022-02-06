@@ -28,10 +28,22 @@ class Usagi12BaseCommand(ABC):
 
     @property
     @abstractmethod
-    def languages(self) -> Optional[Tuple[Language]]:
+    def slashes(self) -> Optional[Tuple[str]]:
+        """
+        Return a list of strings that can act as "slash" commands. Instead of matching regex,
+        this will follow a pattern of "command/<optional: query>". Is not case-sensitive.
+        Note: Usagi12 will call .strip() on the passed in command before checking x.slashes().
+        Used by Usagi12 to determine where to send commands.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def languages(self) -> Optional[Tuple[str]]:
         """
         Indicate which locales are supported by this module.
         Leave empty if the language does not matter (i.e. same link is always returned).
+        Should be something like, "en-US" or "en-JA"
         """
         pass
     

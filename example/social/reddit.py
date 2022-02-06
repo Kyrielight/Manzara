@@ -26,17 +26,21 @@ class Reddit(Usagi12WithArgumentsCommand):
     @property
     def description(self) -> str:
         return """For making searches or navigating through Reddit"""
-    
+
     @property
     def bindings(self) -> Optional[Tuple[re.Pattern]]:
         return (
             re.compile(r'^(?:r\/\w+)|(?:re?((?:18)|(?:nsfw))? .+)$', re.IGNORECASE),
         )
-    
+
     @property
     def triggers(self) -> Optional[Tuple[str]]:
         return None
-    
+
+    @property
+    def slashes(self) -> Optional[Tuple[str]]:
+        return None
+
     @property
     def languages(self) -> Optional[Tuple[Language]]:
         return None

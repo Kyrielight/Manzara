@@ -2,6 +2,8 @@
 Helper module for handling user locale
 """
 
+import re
+
 from ayumi import Ayumi
 
 from collections import deque
@@ -9,6 +11,8 @@ from flask import request
 from langcodes import DEFAULT_LANGUAGE, Language
 
 from typing import Tuple
+
+LANGUAGE_FINDER = re.compile(r'.*(( -.+ )|( -.+$))', re.IGNORECASE)
 
 def get_languages(req: request, command: str) -> Tuple[Tuple[Language], str]:
     """
@@ -33,27 +37,17 @@ def get_languages(req: request, command: str) -> Tuple[Tuple[Language], str]:
                             reverse=True))
     Ayumi.debug("Detected browser language: {}".format(req.accept_languages.to_header()))
 
-    # If user has provided an override themselves, that takes precedent
-    command_split = command.split()
-    try:
-        manual_lang = command_split[1].replace(":", "-")
-
-        if manual_lang.startswith("-"):
-            # Add language as primary
-            languages.appendleft(Language.get(manual_lang[1:]))
-            Ayumi.debug("Detected user language override: {}".format(manual_lang[1:]))
-            # Remove that override from the command 
-            command_split.pop(1)
-
-        elif manual_lang.startswith("\-"):
-            # Literal hyphen
-            command_split[1] = command_split[1][1:]
-            Ayumi.debug("Detected literal hyphen, removing from command.")
-    except:
-        pass
+    if match := LANGUAGE_FINDER.search(command):
+        override_lang = match.groups()[1].strip()[1:]
+        languages.appendleft(Language.get(override_lang))
+        Ayumi.debug("Detected user language override: {}".format(override_lang))
+        command = command.replace(match.groups()[1], " ").strip()
+        Ayumi.debug("Removed language codes, new command: \"{}\"".format(command))
+    else:
+        Ayumi.debug("No user command language overrides detected.")
 
     Ayumi.debug("Returning language priority list: {}".format(languages))
-    return tuple(languages), " ".join(command_split)
+    return tuple(languages), command
 
 
 
