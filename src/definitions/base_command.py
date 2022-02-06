@@ -39,10 +39,11 @@ class Usagi12BaseCommand(ABC):
 
     @property
     @abstractmethod
-    def languages(self) -> Optional[Tuple[Language]]:
+    def languages(self) -> Optional[Tuple[str]]:
         """
         Indicate which locales are supported by this module.
         Leave empty if the language does not matter (i.e. same link is always returned).
+        Should be something like, "en-US" or "en-JA"
         """
         pass
     

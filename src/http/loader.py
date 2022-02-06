@@ -195,7 +195,7 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
     # Determine the language to be used, in accordance with support from the module.
     Ayumi.debug("Loaded module declared languages: {}".format(module.languages))
     for la in language_accept:
-        if la in module.languages:
+        if la in [Language.get(i) for i in module.languages]:
             Ayumi.debug("Overwrote request use language from en to {}".format(str(la)))
             language = la
             break

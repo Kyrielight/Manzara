@@ -7,8 +7,8 @@ from typing import Optional, Tuple
 from urllib.parse import quote
 
 BASE_URLS = defaultdict(lambda: "https://www.google.com/", {
-    Language.get('ja'): "https://www.google.co.jp/",
-    Language.get('jp'): "https://www.google.co.jp/",
+    'ja': "https://www.google.co.jp/",
+    'jp': "https://www.google.co.jp/",
 })
 
 SEARCH = "search?q={}"
@@ -23,11 +23,11 @@ class Google(Usagi12WithArgumentsCommand):
         if len(args) > 0:
             args = ' '.join(args)
             if self.bindings[0].match(args):
-                return BASE_URLS[language] + SEARCH.format(quote(args[1:]))
+                return BASE_URLS[str(language)] + SEARCH.format(quote(args[1:]))
             else:
-                return BASE_URLS[language] + SEARCH.format(quote(args))
+                return BASE_URLS[str(language)] + SEARCH.format(quote(args))
         else:
-            return BASE_URLS[language]
+            return BASE_URLS[str(language)]
 
     @property
     def description(self) -> str:
@@ -48,9 +48,9 @@ class Google(Usagi12WithArgumentsCommand):
         return None
 
     @property
-    def languages(self) -> Optional[Tuple[Language]]:
+    def languages(self) -> Optional[Tuple[str]]:
         return (
-            Language.get('en'),
-            Language.get('ja'),
-            Language.get('jp'),
+            'en',
+            'ja',
+            'jp'
         )
