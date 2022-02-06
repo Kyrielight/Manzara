@@ -34,8 +34,10 @@ MODULE_VALIDATOR = Validator({
     'args': {'type': 'boolean', 'required': True},
     'command': {'type': 'string', 'required': True},
     'default': {'type': 'string', 'required': True},
+    'slashes': {'type': ['string', 'list'], 'schema': {'type': 'string'}, 'required': False},
+    'triggers': {'type': ['string', 'list'], 'schema': {'type': 'string'}, 'required': False},
     'type': {'type': 'string', 'required': True, 'allowed': ['trigger', 'slash', 'all']},
-    'urls': {'type': 'dict', 'required': False}
+    'urls': {'type': 'dict', 'required': False},
 })
 
 
@@ -97,6 +99,15 @@ def _maybe_import_from_yaml_file(root: str, file: str):
     except Exception as e:
         Ayumi.warning("Failed to load yaml file under path {}".format(join(root, file)), color=Ayumi.LRED)
 
+def _load_commands_from_module(key: str, module: Dict) -> List[str]:
+    """
+    Loads triggers, slashes, etc. from a module file.
+    """
+    commands = module.get(key, list())
+    if isinstance(commands, str):
+       commands = [commands]
+    return commands
+
 def _maybe_import_from_file_modules(modules: Dict):
 
     # A single module/file can hold multiple definitions
@@ -107,13 +118,9 @@ def _maybe_import_from_file_modules(modules: Dict):
             Ayumi.warning("Module {} is invalid, skipping import.".format(name), color=Ayumi.RED)
             continue
 
-        # Only load commands that haven't been loaded before.
-        if module['command'] in TRIGGER_LOOKUP:
-            Ayumi.warning("Module {} is reusing a command, skipping import.".format(name), color=Ayumi.RED)
-            continue
-
         has_args = module['args']
-        binding = module['command']
+        slashes = _load_commands_from_module("slashes", module)
+        triggers = _load_commands_from_module("triggers", module)
         # Create a structure to store all urls with Language objects as keys
         language_lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
 
@@ -137,25 +144,26 @@ def _maybe_import_from_file_modules(modules: Dict):
         # Create new lookup item
         lookup_item = LookupItem(lambda a, l: language_lookup_dict[l].format(arg=quote(' '.join(a[1:]))) \
                             if len(a) > 1 \
-                            else language_lookup_dict.default_factory(), 
+                            else language_lookup_dict.default_factory(),
                             list(language_lookup_dict.keys())) \
                         if has_args \
                             else LookupItem(lambda l: language_lookup_dict[l], list(language_lookup_dict.keys()))
 
         # Add bindings to lookups
-        if module['type'] == 'trigger' or module['type'] == 'all':
-            Ayumi.debug("Adding trigger: {}".format(binding), color=Ayumi.LCYAN)
-            if binding not in TRIGGER_LOOKUP:
-                TRIGGER_LOOKUP[binding] = lookup_item
+        for trigger in triggers:
+            Ayumi.debug("Adding trigger: {}".format(trigger), color=Ayumi.LCYAN)
+            if trigger not in TRIGGER_LOOKUP:
+                TRIGGER_LOOKUP[trigger] = lookup_item
             else:
-                Ayumi.warning("Found duplicate trigger: {}".format(binding), color=Ayumi.LYELLOW)
+                Ayumi.warning("Found duplicate trigger: {}".format(trigger), color=Ayumi.LYELLOW)
 
-        if module['type'] == 'slash' or module['type'] == 'all':
-            Ayumi.debug("Adding slash: {}".format(binding), color=Ayumi.LCYAN)
-            if binding not in SLASH_LOOKUP:
-                SLASH_LOOKUP[binding] = lookup_item
+        for slash in slashes:
+            Ayumi.debug("Adding slash: {}".format(slash), color=Ayumi.LCYAN)
+            if slash.endswith("/"): slash = slash[:-1]
+            if slash not in SLASH_LOOKUP:
+                SLASH_LOOKUP[slash] = lookup_item
             else:
-                Ayumi.warning("Found duplicate slash: {}".format(binding), color=Ayumi.LYELLOW)
+                Ayumi.warning("Found duplicate slash: {}".format(slash), color=Ayumi.LYELLOW)
 
 
 def search(command: str, command_og: str, language_accept: Tuple) -> str:

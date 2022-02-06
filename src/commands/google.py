@@ -38,7 +38,7 @@ class Google(Usagi12WithArgumentsCommand):
         return (
             re.compile(r'^(?:g|google)(?:\ .+)?$', re.IGNORECASE),
         )
-    
+
     @property
     def slashes(self) -> Optional[Tuple[str]]:
         return None
