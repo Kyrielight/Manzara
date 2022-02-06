@@ -38,10 +38,10 @@ def get_languages(req: request, command: str) -> Tuple[Tuple[Language], str]:
     Ayumi.debug("Detected browser language: {}".format(req.accept_languages.to_header()))
 
     if match := LANGUAGE_FINDER.search(command):
-        override_lang = match.groups()[1].strip()[1:]
+        override_lang = match.groups()[0].strip()[1:]
         languages.appendleft(Language.get(override_lang))
         Ayumi.debug("Detected user language override: {}".format(override_lang))
-        command = command.replace(match.groups()[1], " ").strip()
+        command = command.replace(match.groups()[0], " ").strip()
         Ayumi.debug("Removed language codes, new command: \"{}\"".format(command))
     else:
         Ayumi.debug("No user command language overrides detected.")
