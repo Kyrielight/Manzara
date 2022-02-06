@@ -1,5 +1,5 @@
 yt3:
-  command: 'yt3'
+  triggers: 'yt3'
   args: true
   default: "https://youtube.com"
   urls:

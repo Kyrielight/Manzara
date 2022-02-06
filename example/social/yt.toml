@@ -1,5 +1,6 @@
 [yt2]
-command = 'yt2'
+triggers = 'yt2'
+slashes = ['yt2']
 args = true
 default = "https://youtube.com"
 [yt2.urls]
