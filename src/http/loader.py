@@ -6,6 +6,7 @@ import yaml
 
 from cerberus import Validator
 from collections import defaultdict
+from enum import Enum
 from importlib import import_module
 from inspect import getmembers, isclass
 from os import walk
@@ -39,6 +40,11 @@ MODULE_VALIDATOR = Validator({
     'type': {'type': 'string', 'required': True, 'allowed': ['trigger', 'slash', 'all']},
     'urls': {'type': 'dict', 'required': False},
 })
+
+class CommandMode(Enum):
+    TRIGGER = 1
+    SLASH = 2
+    REGEX = 3
 
 
 def _maybe_import_from_class_file(root: str, file: str):
@@ -186,17 +192,21 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
     slash = trigger.split('/')[0] if '/' in trigger else None
 
     # Fetch any module that this command matches. If not, Google is used by default.
+    command_type = None
     try:
         module = TRIGGER_LOOKUP[trigger]
+        command_type = CommandMode.TRIGGER
         Ayumi.debug("Found in trigger lookup: {}".format(trigger))
     except:
         try:
             module = SLASH_LOOKUP[slash]
+            command_type = CommandMode.SLASH
             Ayumi.debug("Found in slash lookup: {}".format(slash))
         except:
             for binder in REGEX_LOOKUP:
                 if binder[0].match(command):
                     module = binder[1]
+                    command_type = CommandMode.REGEX
                     Ayumi.debug("Matched in regex lookup: {}".format(command))
                     break
 
@@ -211,7 +221,9 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
     # Return with command or without.
     try:
         # For ease of development, just convert the slash command into a trigger command.
-        url = module.redirect(language, command.replace("/", " ").split())
+        url = module.redirect(language, command.replace("/", " ").split()) \
+            if command_type is CommandMode.SLASH \
+            else module.redirect(language, command.split())
         Ayumi.debug('Returning "{}" to "{}"'.format(command_og, url))
         return url
     except:
