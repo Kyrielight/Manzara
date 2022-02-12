@@ -22,8 +22,8 @@ class Google(Usagi12WithArgumentsCommand):
         """
         if len(args) > 0:
             args = ' '.join(args)
-            if self.bindings[0].match(args):
-                return BASE_URLS[str(language)] + SEARCH.format(quote(args[1:]))
+            if args.startswith("g "):
+                return BASE_URLS[str(language)] + SEARCH.format(quote(args[2:]))
             else:
                 return BASE_URLS[str(language)] + SEARCH.format(quote(args))
         else:
