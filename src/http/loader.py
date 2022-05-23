@@ -1,6 +1,4 @@
 
-
-from lib2to3.pgen2.token import SLASH
 import toml
 import yaml
 
@@ -33,11 +31,10 @@ REGEX_LOOKUP: List[LookupError] = list()
 
 MODULE_VALIDATOR = Validator({
     'args': {'type': 'boolean', 'required': True},
-    'command': {'type': 'string', 'required': True},
+    'description': {'type': 'string', 'required': True},
     'default': {'type': 'string', 'required': True},
     'slashes': {'type': ['string', 'list'], 'schema': {'type': 'string'}, 'required': False},
     'triggers': {'type': ['string', 'list'], 'schema': {'type': 'string'}, 'required': False},
-    'type': {'type': 'string', 'required': True, 'allowed': ['trigger', 'slash', 'all']},
     'urls': {'type': 'dict', 'required': False},
 })
 
