@@ -8,6 +8,7 @@ RUN apk update && apk upgrade && \
 COPY requirements.txt /opt/requirements.txt
 RUN pip3 install --no-cache-dir -r /opt/requirements.txt && rm /opt/requirements.txt
 
+COPY commands /usagi12/commands
 COPY src /usagi12/src
 COPY usagi12.py /usagi12/
 
