@@ -78,97 +78,6 @@ def _maybe_import_from_class_file(root: str, file: str):
                     Ayumi.debug("Adding binding: {} with flag(s): {}".format(binding.pattern, binding.flags or "None"), color=Ayumi.LCYAN)
                     REGEX_LOOKUP.append((binding, LookupItem(temp_instance.redirect, temp_instance.languages)))
 
-def _maybe_import_from_toml_file(root: str, file: str):
-    """
-    Helper to load a toml file into the lookup store.
-    Do not use except in initialisation.
-    """
-    try:
-        with open(join(root, file), 'r') as raw:
-            modules = toml.load(raw)
-            _maybe_import_from_file_modules(modules)
-    except Exception as e:
-        Ayumi.warning("Failed to load toml file under path {}".format(join(root, file)), color=Ayumi.LRED)
-
-def _maybe_import_from_yaml_file(root: str, file: str):
-    """
-    Helper to load a yaml file into the lookup store.
-    Do not use except in initialisation.
-    """
-    try:
-        with open(join(root, file), 'r') as raw:
-            modules = yaml.safe_load(raw)
-            _maybe_import_from_file_modules(modules)
-    except Exception as e:
-        Ayumi.warning("Failed to load yaml file under path {}".format(join(root, file)), color=Ayumi.LRED)
-
-def _load_commands_from_module(key: str, module: Dict) -> List[str]:
-    """
-    Loads triggers, slashes, etc. from a module file.
-    """
-    commands = module.get(key, list())
-    if isinstance(commands, str):
-       commands = [commands]
-    return commands
-
-def _maybe_import_from_file_modules(modules: Dict):
-
-    # A single module/file can hold multiple definitions
-    for name, module in modules.items():
-
-        # Validate that each module at least fits the standard.
-        if not MODULE_VALIDATOR.validate(module):
-            Ayumi.warning("Module {} is invalid, skipping import.".format(name), color=Ayumi.RED)
-            continue
-
-        has_args = module['args']
-        slashes = _load_commands_from_module("slashes", module)
-        triggers = _load_commands_from_module("triggers", module)
-        # Create a structure to store all urls with Language objects as keys
-        language_lookup_dict: Dict[Language, str] = defaultdict(lambda: module['default'])
-
-        # Load any locale-specific urls
-        if 'urls' in module:
-            for language, url in module['urls'].items():
-
-                # If this is an args module, make sure there's a str to replace.
-                if has_args and not "{arg}" in url:
-                    Ayumi.warning("Module {} is set to accept arguments, but langcode {} doesn't accept arguments.".format(name, language))
-                    continue
-
-                try:
-                    language_lookup_dict[Language.get(language)] = url
-                except:
-                    Ayumi.warning("Error importing language {} with url {}".format(language, url), color=Ayumi.LRED)
-        # No locale-specific urls, only a default exists
-        else:
-            Ayumi.debug("No urls structure in module {}".format(name))
-
-        # Create new lookup item
-        lookup_item = LookupItem(lambda a, l: language_lookup_dict[l].format(arg=quote(' '.join(a[1:]))) \
-                            if len(a) > 1 \
-                            else language_lookup_dict.default_factory(),
-                            list(language_lookup_dict.keys())) \
-                        if has_args \
-                            else LookupItem(lambda l: language_lookup_dict[l], list(language_lookup_dict.keys()))
-
-        # Add bindings to lookups
-        for trigger in triggers:
-            Ayumi.debug("Adding trigger: {}".format(trigger), color=Ayumi.LCYAN)
-            if trigger not in TRIGGER_LOOKUP:
-                TRIGGER_LOOKUP[trigger] = lookup_item
-            else:
-                Ayumi.warning("Found duplicate trigger: {}".format(trigger), color=Ayumi.LYELLOW)
-
-        for slash in slashes:
-            Ayumi.debug("Adding slash: {}".format(slash), color=Ayumi.LCYAN)
-            if slash.endswith("/"): slash = slash[:-1]
-            if slash not in SLASH_LOOKUP:
-                SLASH_LOOKUP[slash] = lookup_item
-            else:
-                Ayumi.warning("Found duplicate slash: {}".format(slash), color=Ayumi.LYELLOW)
-
-
 def search(command: str, command_og: str, language_accept: Tuple) -> str:
     """
     Perform a search over imported modules and return the best match. Defaults to Google.
@@ -235,10 +144,6 @@ for root, dirs, files in walk(("commands")):
         Ayumi.debug("Now loading: {}".format(file))
         if file.endswith(".py"):
             _maybe_import_from_class_file(root, file)
-        elif file.endswith(".toml"):
-            _maybe_import_from_toml_file(root, file)
-        elif file.endswith(".yaml") or file.endswith(".yml"):
-            _maybe_import_from_yaml_file(root, file)
         elif file.endswith(".pyc"):
             Ayumi.debug("Found bytecode file: {}, skipping...".format(file))
         else:
