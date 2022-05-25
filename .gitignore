@@ -197,4 +197,5 @@ Thumbs.db
 
 # Ignore any changes in the src/commands folder - this is where user changes will occur
 commands/*
+!commands/google.py
 example/*
