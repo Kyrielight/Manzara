@@ -7,7 +7,7 @@ from langcodes import DEFAULT_LANGUAGE, Language
 
 from commands.google import Google # Default fallback
 from src.http import language as language_helper
-from src.http import loader
+from src.athenaeum import loader
 
 
 app = Flask(__name__)
