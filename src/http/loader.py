@@ -16,7 +16,7 @@ from urllib.parse import quote
 from ayumi import Ayumi
 from langcodes import Language
 
-from src.commands.google import Google
+from commands.google import Google
 from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 
 from .lookup_item import LookupItem
@@ -230,7 +230,7 @@ def search(command: str, command_og: str, language_accept: Tuple) -> str:
 
 # Walk down the file and import modules.
 Ayumi.debug("Starting module import process...", color=Ayumi.BLUE)
-for root, dirs, files in walk(("src/commands")):
+for root, dirs, files in walk(("commands")):
     for file in files:
         Ayumi.debug("Now loading: {}".format(file))
         if file.endswith(".py"):
