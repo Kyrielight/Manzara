@@ -17,7 +17,7 @@ from ayumi import Ayumi
 from langcodes import Language
 
 from commands.google import Google
-from src.definitions.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
+from src.commands.arguments_command import Usagi12WithArgumentsCommand, Usagi12WithoutArgumentsCommand
 
 from .lookup_item import LookupItem
 
