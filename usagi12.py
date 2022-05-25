@@ -7,7 +7,7 @@ from langcodes import DEFAULT_LANGUAGE, Language
 
 from commands.google import Google # Default fallback
 from src.http import language as language_helper
-from src.athenaeum import loader
+from src.athenaeum import primoroot
 
 
 app = Flask(__name__)
@@ -29,7 +29,7 @@ def bunny():
         language_accept, command = language_helper.get_languages(request, command)
         Ayumi.debug("Got languages: {}".format([x._str_tag for x in language_accept]))
 
-        url = loader.search(command, command_og, tuple(language_accept))
+        url = primoroot.search(command, command_og, tuple(language_accept))
         Ayumi.info('Redirecting "{}" to "{}'.format(command_og, url), color=Ayumi.LCYAN)
         return redirect(url)
         
