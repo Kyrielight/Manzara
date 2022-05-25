@@ -5,9 +5,9 @@ from ayumi import Ayumi
 from flask import Flask, request, redirect
 from langcodes import DEFAULT_LANGUAGE, Language
 
-from src.commands.google import Google # Default fallback
+from commands.google import Google # Default fallback
 from src.http import language as language_helper
-from src.http import loader
+from src.athenaeum import loader
 
 
 app = Flask(__name__)

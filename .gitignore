@@ -195,6 +195,7 @@ Thumbs.db
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode
 
-# Ignore any changes in the src/commands folder - this is where user changes will occur
-src/commands/*
+# Ignore any changes in the commands folder - this is where user changes will occur
+commands/*
+!commands/google.py
 example/*
